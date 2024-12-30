@@ -4,7 +4,8 @@ import 'package:question_nswer/ui/screens/post_questions_screen.dart';
 import 'package:question_nswer/ui/screens/proposals_screen.dart';
 import 'package:question_nswer/ui/screens/contracts_screen.dart';
 import 'package:question_nswer/ui/screens/alerts_screen.dart';
-import 'package:question_nswer/ui/screens/messages_screen.dart';
+import 'package:question_nswer/ui/screens/message_screen.dart';
+import 'package:question_nswer/ui/screens/chat_screen.dart';
 
 void main() => runApp(AnswersApp());
 
