@@ -260,13 +260,12 @@ class QuestionDetailScreen extends StatelessWidget {
   }
 }
 
-// Screen for Messages tab
-class MessagesScreen extends StatelessWidget {
+class ProposalsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Messages'),
+        title: Text('Proposals'),
       ),
       body: ListView.builder(
         padding: EdgeInsets.all(16.0),
@@ -280,140 +279,55 @@ class MessagesScreen extends StatelessWidget {
             child: ListTile(
               contentPadding:
                   EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              leading: Stack(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.blue,
-                    child: Icon(Icons.person, color: Colors.white),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: CircleAvatar(
-                      radius: 5,
-                      backgroundColor: index % 2 == 0
-                          ? Colors.green
-                          : Colors.red, // Active or inactive
-                    ),
-                  ),
-                ],
+              leading: CircleAvatar(
+                backgroundImage: AssetImage(
+                    'assets/profile_placeholder.png'), // Replace with actual image path
               ),
-              title: Text('User $index',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(
+                'Expert ${index + 1}',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Question Title $index',
-                      style: TextStyle(color: Colors.black54, fontSize: 14)),
-                  SizedBox(height: 4),
-                  Text('This is a preview of the message...',
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text('Offering: \$${(index + 1) * 50}',
+                      style: TextStyle(color: Colors.green, fontSize: 14)),
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: Colors.orange, size: 16),
+                      SizedBox(width: 4),
+                      Text('${4 + (index % 2) * 0.5}',
+                          style: TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                  Text('Location: City ${index + 1}',
+                      style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
-              trailing: Text('12:3${index} PM',
-                  style: TextStyle(fontSize: 12, color: Colors.grey)),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatDetailScreen(userIndex: index),
+              trailing: Row(
+                mainAxisSize:
+                    MainAxisSize.min, // Ensures the row takes minimal space
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to messaging screen
+                    },
+                    child: Text('Message'),
                   ),
-                );
-              },
+                  SizedBox(width: 8), // Spacing between buttons
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to hire action
+                    },
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                    child: Text('Hire'),
+                  ),
+                ],
+              ),
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-// Chat Detail Screen
-class ChatDetailScreen extends StatelessWidget {
-  final int userIndex;
-
-  ChatDetailScreen({required this.userIndex});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Chat with User $userIndex'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.video_call),
-            onPressed: () {
-              // Video call functionality
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.call),
-            onPressed: () {
-              // Voice call functionality
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: 15,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Align(
-                    alignment: index % 2 == 0
-                        ? Alignment.centerLeft
-                        : Alignment.centerRight,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: index % 2 == 0
-                            ? Colors.grey[300]
-                            : Colors.blue[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: EdgeInsets.all(12),
-                      child: Text(
-                        'Message $index',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.attach_file),
-                  onPressed: () {
-                    // Handle file attachment
-                  },
-                ),
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: () {
-                    // Handle message sending
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
