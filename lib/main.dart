@@ -1,7 +1,10 @@
-// Flutter UI for Answers App
 import 'package:flutter/material.dart';
-import 'package:question_nswer/ui/screens/questions_details_screen.dart';
+
 import 'package:question_nswer/ui/screens/post_questions_screen.dart';
+import 'package:question_nswer/ui/screens/proposals_screen.dart';
+import 'package:question_nswer/ui/screens/contracts_screen.dart';
+import 'package:question_nswer/ui/screens/alerts_screen.dart';
+import 'package:question_nswer/ui/screens/messages_screen.dart';
 
 void main() => runApp(AnswersApp());
 
@@ -19,12 +22,35 @@ class AnswersApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+
+  // List of screens for each tab
+  final List<Widget> _screens = [
+    QuestionsScreen(),
+    ProposalsScreen(),
+    ContractsScreen(),
+    MessagesScreen(),
+    AlertsScreen(),
+  ];
+
+  // Handle BottomNavigationBar tap
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home'),
+        title: Text('Answers App'),
         actions: [
           IconButton(
             icon: Icon(Icons.person),
@@ -34,56 +60,154 @@ class HomeScreen extends StatelessWidget {
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Recent Questions',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: 10,
-                itemBuilder: (context, index) {
-                  return Card(
-                    margin: EdgeInsets.symmetric(vertical: 10),
-                    child: ListTile(
-                      title: Text('Question Title $index'),
-                      subtitle: Text('Question description goes here...'),
-                      trailing: Icon(Icons.arrow_forward),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                QuestionDetailScreen(questionIndex: index),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+      body: _screens[_selectedIndex], // Display the selected screen
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PostQuestionScreen(),
+                  ),
+                );
+              },
+              child: Icon(Icons.add),
+            )
+          : null, // Show FloatingActionButton only on Questions tab
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.question_answer),
+            label: 'Questions',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.work),
+            label: 'Proposals',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: 'Contracts',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message),
+            label: 'Messages',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Alerts',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped, // Update the selected index
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostQuestionScreen(),
+    );
+  }
+}
+
+// Example screen for Questions tab
+class QuestionsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Search Bar
+          TextField(
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.grey[200],
+              prefixIcon: Icon(Icons.search, color: Colors.grey),
+              hintText: 'Search for questions...',
+              hintStyle: TextStyle(color: Colors.grey),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+                borderSide: BorderSide.none,
+              ),
             ),
-          );
-        },
-        child: Icon(Icons.add),
+          ),
+          SizedBox(height: 20),
+          // Recent Questions Header
+          Text(
+            'Recent Questions',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 20),
+          // Modern ListView for Questions
+          Expanded(
+            child: ListView.builder(
+              itemCount: 10,
+              itemBuilder: (context, index) {
+                return Card(
+                  elevation: 2,
+                  margin: EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 16,
+                    ),
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      child: Icon(Icons.question_answer, color: Colors.white),
+                    ),
+                    title: Text(
+                      'Question Title $index',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'This is a brief description of the question. Tap to view more details.',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              QuestionDetailScreen(questionIndex: index),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Placeholder screen for question details
+class QuestionDetailScreen extends StatelessWidget {
+  final int questionIndex;
+
+  QuestionDetailScreen({required this.questionIndex});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Question Details'),
+      ),
+      body: Center(
+        child: Text('Details for Question $questionIndex'),
       ),
     );
   }
