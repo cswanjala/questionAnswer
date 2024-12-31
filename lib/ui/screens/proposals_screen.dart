@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'chat_screen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ProposalsScreen extends StatelessWidget {
   @override
@@ -65,6 +66,11 @@ class ProposalsScreen extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       // Navigate to hire action
+                      Fluttertoast.showToast(
+                        msg: "You have successfully hired the Expert!",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
