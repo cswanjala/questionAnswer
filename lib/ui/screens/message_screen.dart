@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'chat_screen.dart'; // Import the ChatScreen
 
 class MessagesScreen extends StatelessWidget {
@@ -52,11 +51,12 @@ class MessagesScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               onTap: () {
-                // Navigate to the ChatScreen
+                // Navigate to the ChatScreen with the selected expert's name
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ChatScreen(),
+                    builder: (context) =>
+                        ChatScreen(expertName: conversation.name),
                   ),
                 );
               },
