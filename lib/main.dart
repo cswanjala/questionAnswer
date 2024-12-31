@@ -6,6 +6,7 @@ import 'package:question_nswer/ui/screens/proposals_screen.dart';
 import 'package:question_nswer/ui/screens/contracts_screen.dart';
 import 'package:question_nswer/ui/screens/alerts_screen.dart';
 import 'package:question_nswer/ui/screens/message_screen.dart';
+import 'package:question_nswer/ui/screens/questions_details_screen.dart';
 
 void main() => runApp(AnswersApp());
 
@@ -247,21 +248,4 @@ class QuestionsScreen extends StatelessWidget {
   }
 }
 
-// Placeholder screen for question details
-class QuestionDetailScreen extends StatelessWidget {
-  final int questionIndex;
 
-  QuestionDetailScreen({required this.questionIndex});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Question Details'),
-      ),
-      body: Center(
-        child: Text('Details for Question $questionIndex'),
-      ),
-    );
-  }
-}
