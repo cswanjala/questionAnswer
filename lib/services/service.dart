@@ -33,17 +33,26 @@ class ApiService {
     }
   }
 
-  Future<List<dynamic>> fetchExperts() async {
-    final url = Uri.parse("$baseUrl/experts");
-    final response = await http.get(
-      url,
-      headers: {'Content-Type': 'application/json'},
-    );
+  Future<List<Map<String, dynamic>>> fetchExperts() async {
+  final url = Uri.parse("$baseUrl/experts");
+  final response = await http.get(
+    url,
+    headers: {'Content-Type': 'application/json'},
+  );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception("Failed to load experts: ${response.body}");
-    }
+  if (response.statusCode == 200) {
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.map((item) {
+      return {
+        ...item as Map<String, dynamic>,
+        // Ensure 'categories' is a List<int>
+        'categories': (item['categories'] as List<dynamic>).map((e) => e as int).toList(),
+      };
+    }).toList();
+  } else {
+    throw Exception("Failed to load experts: ${response.body}");
   }
+}
+
+
 }

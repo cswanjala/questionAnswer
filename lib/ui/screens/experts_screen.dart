@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:question_nswer/ui/screens/chat_screen.dart';
+import 'package:question_nswer/services/service.dart';
 
-class ExpertsListScreen extends StatelessWidget {
+class ExpertsListScreen extends StatefulWidget {
   const ExpertsListScreen({super.key});
+
+  @override
+  _ExpertsListScreenState createState() => _ExpertsListScreenState();
+}
+
+class _ExpertsListScreenState extends State<ExpertsListScreen> {
+  late Future<List<Map<String, dynamic>>> _expertsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _expertsFuture = ApiService().fetchExperts();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,17 +45,43 @@ class ExpertsListScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: 7, // Replace with actual data length
-                itemBuilder: (context, index) {
-                  return _buildExpertCard(
-                    context: context, // Pass the context here
-                    name: "Dr. David, MD",
-                    title: "General Practitioner",
-                    rating: 4.4,
-                    imageUrl: "https://via.placeholder.com/150",
-                    buttonLabel: index % 2 == 0 ? "Ask" : "Add",
-                  );
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _expertsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        "Failed to load experts: ${snapshot.error}",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Text(
+                        "No experts available.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    );
+                  } else {
+                    final experts = snapshot.data!;
+                    return ListView.builder(
+                      itemCount: experts.length,
+                      itemBuilder: (context, index) {
+                        final expert = experts[index];
+                        return _buildExpertCard(
+                          context: context,
+                          id: expert['id'],
+                          userId: expert['user'],
+                          title: expert['title'] ?? "N/A",
+                          rating: expert['average_rating']?.toDouble() ?? 0.0,
+                          categories: expert['categories'] ?? [],
+                          buttonLabel: index % 2 == 0 ? "Ask" : "Add",
+                        );
+                      },
+                    );
+                  }
                 },
               ),
             ),
@@ -52,66 +92,76 @@ class ExpertsListScreen extends StatelessWidget {
   }
 
   Widget _buildExpertCard({
-    required BuildContext context, // Accept context as a parameter
-    required String name,
-    required String title,
-    required double rating,
-    required String imageUrl,
-    required String buttonLabel,
-  }) {
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(imageUrl),
-          radius: 30,
+  required BuildContext context,
+  required int id,
+  required int userId,
+  required String title,
+  required double rating,
+  required List<int> categories,
+  required String buttonLabel,
+}) {
+  return Card(
+    margin: EdgeInsets.symmetric(vertical: 8),
+    child: ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.grey[300],
+        radius: 30,
+        child: Text(
+          title.substring(0, 1).toUpperCase(),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        title: Text(name, style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title),
-            SizedBox(height: 5),
-            Row(
-              children: [
-                _buildStarRating(rating),
-                SizedBox(width: 8),
-                Text(
-                  "$rating/5",
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
-        ),
-        trailing: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context, // Use the context here
-              MaterialPageRoute(
-                builder: (context) => ChatScreen(
-                  expertName: name,
-                  expertImage: imageUrl,
-                  expertCategory: title,
-                ),
+      ),
+      title: Text(
+        "User ID: $userId",
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Title: $title"),
+          SizedBox(height: 5),
+          Row(
+            children: [
+              _buildStarRating(rating),
+              SizedBox(width: 8),
+              Text(
+                "$rating/5",
+                style: TextStyle(color: Colors.grey),
               ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor:
-                buttonLabel == "Ask" ? Colors.blue : Colors.grey[200],
-            minimumSize: Size(60, 30),
+            ],
           ),
-          child: Text(
-            buttonLabel,
-            style: TextStyle(
-              color: buttonLabel == "Ask" ? Colors.white : Colors.black,
+          Text("Categories: ${categories.join(", ")}"),
+        ],
+      ),
+      trailing: ElevatedButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(
+                expertName: "User ID $userId",
+                expertImage: "", // Placeholder, no image provided in API
+                expertCategory: title,
+              ),
             ),
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              buttonLabel == "Ask" ? Colors.blue : Colors.grey[200],
+          minimumSize: Size(60, 30),
+        ),
+        child: Text(
+          buttonLabel,
+          style: TextStyle(
+            color: buttonLabel == "Ask" ? Colors.white : Colors.black,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildStarRating(double rating) {
     int fullStars = rating.floor();
