@@ -1,7 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'homepage_screen.dart';  // Assuming the homepage screen is in the same directory
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+
+  Future<void> login() async {
+    final String username = _usernameController.text;
+    final String password = _passwordController.text;
+
+    if (username.isEmpty || password.isEmpty) {
+      // Show an error if fields are empty
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text('Error'),
+          content: Text('Username and password cannot be empty'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse('http://192.168.220.229:8000/api/login/'),  // Change this to your API login endpoint
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'username': username,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // If the login is successful, save the token
+      final responseData = json.decode(response.body);
+      final String token = responseData['access'];
+
+      // Store the token securely
+      await _secureStorage.write(key: 'auth_token', value: token);
+
+      // Navigate to the homepage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomepageScreen()),
+      );
+
+      // showDialog(
+      //   context: context,
+      //   builder: (_) => AlertDialog(
+      //     title: Text('Login success'),
+      //     content: Text('You are supposed to log in man'),
+      //     actions: [
+      //       TextButton(
+      //         onPressed: () => Navigator.of(context).pop(),
+      //         child: Text('OK'),
+      //       ),
+      //     ],
+      //   ));
+    } else {
+      // If login fails, show an error
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text('Login Failed'),
+          content: Text('Invalid username or password'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +152,7 @@ class LoginScreen extends StatelessWidget {
               SizedBox(height: 30),
               // Email/Username Field
               TextField(
+                controller: _usernameController,
                 decoration: InputDecoration(
                   labelText: 'Email or Username',
                   labelStyle: TextStyle(color: Colors.grey),
@@ -78,6 +168,7 @@ class LoginScreen extends StatelessWidget {
               SizedBox(height: 20),
               // Password Field
               TextField(
+                controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Password',
@@ -94,9 +185,7 @@ class LoginScreen extends StatelessWidget {
               SizedBox(height: 20),
               // Login Button
               ElevatedButton(
-                onPressed: () {
-                  // Handle login action
-                },
+                onPressed: login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   padding: EdgeInsets.symmetric(vertical: 16),
@@ -125,76 +214,6 @@ class LoginScreen extends StatelessWidget {
                     color: Colors.blue,
                     fontSize: 14,
                   ),
-                ),
-              ),
-              SizedBox(height: 30),
-              // Divider
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      'or',
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: Colors.grey)),
-                ],
-              ),
-              SizedBox(height: 20),
-              // Social Media Authentication Buttons
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Handle Google login
-                },
-                icon: Icon(Icons.g_mobiledata, color: Colors.white),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                label: Text(
-                  'Continue with Google',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Handle Facebook login
-                },
-                icon: Icon(Icons.facebook, color: Colors.white),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[900],
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                label: Text(
-                  'Continue with Facebook',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Handle Apple login
-                },
-                icon: Icon(Icons.apple, color: Colors.white),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                label: Text(
-                  'Continue with Apple',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
             ],
