@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 
@@ -16,8 +16,6 @@ class _AskNowScreenState extends State<AskNowScreen> {
   int? _selectedCategoryId;
   final TextEditingController _questionController = TextEditingController();
   List<Map<String, dynamic>> _categories = [];
-
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -72,67 +70,10 @@ class _AskNowScreenState extends State<AskNowScreen> {
 
 
   // Submit the question to the API
-  Future<void> _submitQuestion(String questionContent) async {
-  if (_selectedCategoryId == null || questionContent.isEmpty) {
-    Fluttertoast.showToast(
-      msg: "Please select a category and enter a question.",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-    return;
-  }
-
-  final token = await _secureStorage.read(key: 'authToken'); // Fetch token securely
-  if (token == null) {
-    Fluttertoast.showToast(
-      msg: "User is not authenticated. Please log in.",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-    return;
-  }
-
-  final url = Uri.parse('http://192.168.220.229:8000/api/questions/');
-  final headers = {
-    'Authorization': 'Bearer $token',
-    'Content-Type': 'application/json',
-  };
-
-  final body = json.encode({
-    'content': questionContent,
-    'category': _selectedCategoryId,
-  });
-
-  try {
-    final response = await http.post(url, headers: headers, body: body);
-
-    if (response.statusCode == 201) {
-      final responseBody = json.decode(response.body);
-      final questionId = responseBody['id'];
-      final assignedExpert = responseBody['assigned_expert'];
-
+  Future<void> _submitQuestion(String questionContent, String token) async {
+    if (_selectedCategoryId == null || questionContent.isEmpty) {
       Fluttertoast.showToast(
-        msg: "Question added! (ID: $questionId)\nExpert: $assignedExpert",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 2,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    } else {
-      final responseBody = json.decode(response.body);
-      final errorMessage = responseBody['error'] ?? 'Something went wrong';
-      Fluttertoast.showToast(
-        msg: errorMessage,
+        msg: "Please select a category and enter a question.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
@@ -140,20 +81,71 @@ class _AskNowScreenState extends State<AskNowScreen> {
         textColor: Colors.white,
         fontSize: 16.0,
       );
+      return;
     }
-  } catch (e) {
-    Fluttertoast.showToast(
-      msg: "Network error: $e",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  }
-}
 
+    final url = Uri.parse('http://192.168.220.229:8000/api/questions/'); // Replace with your API URL
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    final body = json.encode({
+      'content': questionContent,
+      'category': _selectedCategoryId,
+    });
+
+    log("body is $body");
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+
+    
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        final questionId = responseBody['id'];
+        final assignedExpert = responseBody['assigned_expert'];
+
+        // Show success toast
+        Fluttertoast.showToast(
+          msg: "Question successfully added! (ID: $questionId)\nAssigned Expert: $assignedExpert",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 2,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      } else {
+        // Show error message from response
+        final responseBody = json.decode(response.body);
+        final errorMessage = responseBody['error'] ?? 'Something went wrong';
+        Fluttertoast.showToast(
+          msg: errorMessage,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+    } catch (e) {
+      // Handle network error
+      Fluttertoast.showToast(
+        msg: "Network error from submit question: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+
+      log(e.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -265,7 +257,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   final questionContent = _questionController.text;
-                  final token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM2MjUxNzY1LCJpYXQiOjE3MzYxNjUzNjUsImp0aSI6ImYxZDIzMWNhOTY1NDQxN2ZhMWVkNTE2NjhlYmVkYjE4IiwidXNlcl9pZCI6N30.qbkyNielXLppRci1HQm1xfJNZjWD20QD4y9qxoWoWDg'; // Replace with your token
+                  final token = 'your-authentication-token'; // Replace with your token
                   _submitQuestion(questionContent, token);
                 },
                 style: ElevatedButton.styleFrom(

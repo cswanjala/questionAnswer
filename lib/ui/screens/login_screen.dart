@@ -52,9 +52,12 @@ class _LoginScreenState extends State<LoginScreen> {
       // If the login is successful, save the token
       final responseData = json.decode(response.body);
       final String token = responseData['access'];
+      final String user_id = responseData['id'];
 
       // Store the token securely
       await _secureStorage.write(key: 'auth_token', value: token);
+      await _secureStorage.write(key: 'user_id', value: user_id);
+      
 
       // Navigate to the homepage
       Navigator.pushReplacement(

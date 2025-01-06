@@ -58,7 +58,7 @@ class ProposalsScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              ChatScreen(expertName: 'salama', expertImage: 'assets/dog1.jpeg', expertCategory: 'vetinary',),
+                              ChatScreen(expertName: 'salama', expertImage: 'assets/dog1.jpeg', expertCategory: 'vetinary', recipientId: 7, authToken: '',),
                         ),
                       );
                     },
