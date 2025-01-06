@@ -56,20 +56,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(CupertinoIcons.video_camera, color: Colors.blue),
-            onPressed: () {
-              // Handle video call
-            },
-          ),
-          IconButton(
-            icon: Icon(CupertinoIcons.phone, color: Colors.blue),
-            onPressed: () {
-              // Handle voice call
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
