@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:question_nswer/ui/screens/chat_screen.dart';
 
 class ExpertsListScreen extends StatelessWidget {
+  const ExpertsListScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

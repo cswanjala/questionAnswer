@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:question_nswer/ui/screens/homepage_screen.dart';
 
 class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }

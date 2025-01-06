@@ -5,7 +5,7 @@ class PackageDetailsScreen extends StatelessWidget {
   final String title;
   final double price;
 
-  PackageDetailsScreen({required this.title, required this.price});
+  const PackageDetailsScreen({super.key, required this.title, required this.price});
 
   @override
   Widget build(BuildContext context) {

@@ -6,7 +6,7 @@ class ChatScreen extends StatefulWidget {
   final String expertImage;
   final String expertCategory;
 
-  ChatScreen({
+  const ChatScreen({super.key, 
     required this.expertName,
     required this.expertImage,
     required this.expertCategory,

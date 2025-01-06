@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AskNowScreen extends StatefulWidget {
+  const AskNowScreen({super.key});
+
   @override
   _AskNowScreenState createState() => _AskNowScreenState();
 }

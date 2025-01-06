@@ -13,6 +13,8 @@ class ContractsScreen extends StatelessWidget {
     ),
   );
 
+  ContractsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,8 +34,8 @@ class ContractsScreen extends StatelessWidget {
             child: ListTile(
               contentPadding: EdgeInsets.all(16),
               leading: CircleAvatar(
-                child: Text(contract.expertName[0]),
                 backgroundColor: Colors.blue,
+                child: Text(contract.expertName[0]),
               ),
               title: Text(
                 contract.title,
@@ -77,7 +79,7 @@ class ContractsScreen extends StatelessWidget {
 class ContractDetailScreen extends StatelessWidget {
   final Contract contract;
 
-  ContractDetailScreen({required this.contract});
+  const ContractDetailScreen({super.key, required this.contract});
 
   @override
   Widget build(BuildContext context) {

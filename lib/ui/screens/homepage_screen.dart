@@ -6,6 +6,8 @@ import 'package:question_nswer/ui/screens/message_screen.dart';
 import 'account_screen.dart';
 
 class HomepageScreen extends StatefulWidget {
+  const HomepageScreen({super.key});
+
   @override
   _HomepageScreenState createState() => _HomepageScreenState();
 }
@@ -67,6 +69,8 @@ class _HomepageScreenState extends State<HomepageScreen> {
 
 // Home Screen
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(

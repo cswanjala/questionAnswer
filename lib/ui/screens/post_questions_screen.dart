@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class PostQuestionScreen extends StatefulWidget {
+  const PostQuestionScreen({super.key});
+
   @override
   _PostQuestionScreenState createState() => _PostQuestionScreenState();
 }

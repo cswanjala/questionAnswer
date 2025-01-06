@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class QuestionDetailScreen extends StatelessWidget {
   final int questionIndex;
 
-  QuestionDetailScreen({required this.questionIndex});
+  const QuestionDetailScreen({super.key, required this.questionIndex});
 
   @override
   Widget build(BuildContext context) {

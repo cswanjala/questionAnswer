@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class HireExpertScreen extends StatelessWidget {
+  const HireExpertScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

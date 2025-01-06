@@ -3,6 +3,8 @@ import 'chat_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class ProposalsScreen extends StatelessWidget {
+  const ProposalsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

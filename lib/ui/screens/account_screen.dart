@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:question_nswer/ui/screens/crypto_memebership_screen.dart';
 
 class AccountPage extends StatelessWidget {
+  const AccountPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

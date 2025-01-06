@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'upgrade_crypto_membership.dart';
 
 class CryptoMembershipPage extends StatelessWidget {
+  const CryptoMembershipPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
