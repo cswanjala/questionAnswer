@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 
@@ -16,6 +17,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
   int? _selectedCategoryId;
   final TextEditingController _questionController = TextEditingController();
   List<Map<String, dynamic>> _categories = [];
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -102,7 +104,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
 
     
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         final responseBody = json.decode(response.body);
         final questionId = responseBody['id'];
         final assignedExpert = responseBody['assigned_expert'];
@@ -120,7 +122,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
       } else {
         // Show error message from response
         final responseBody = json.decode(response.body);
-        final errorMessage = responseBody['error'] ?? 'Something went wrong';
+        final errorMessage = response.statusCode.toString();
         Fluttertoast.showToast(
           msg: errorMessage,
           toastLength: Toast.LENGTH_SHORT,
@@ -255,10 +257,11 @@ class _AskNowScreenState extends State<AskNowScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final questionContent = _questionController.text;
-                  final token = 'your-authentication-token'; // Replace with your token
-                  _submitQuestion(questionContent, token);
+                  final String? token = await _secureStorage.read(key: 'auth_token');
+                   // Replace with your token
+                  _submitQuestion(questionContent, token!);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,

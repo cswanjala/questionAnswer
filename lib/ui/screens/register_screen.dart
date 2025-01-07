@@ -2,42 +2,81 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:question_nswer/ui/screens/register_screen.dart';
-import 'homepage_screen.dart';  // Assuming the homepage screen is in the same directory
+import 'package:fluttertoast/fluttertoast.dart';
+import 'homepage_screen.dart'; // Assuming this is your homepage screen
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
-  Future<void> login() async {
+  Future<void> register() async {
     final String username = _usernameController.text;
+    final String email = _emailController.text;
     final String password = _passwordController.text;
+    final String confirmPassword = _confirmPasswordController.text;
 
-    if (username.isEmpty || password.isEmpty) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Username and password cannot be empty'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
-            ),
-          ],
-        ),
+    if (username.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "All fields must be filled",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
       );
       return;
     }
 
+    if (password != confirmPassword) {
+      Fluttertoast.showToast(
+        msg: "Passwords do not match",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+      );
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse('http://192.168.220.229:8000/api/users/'), // Adjust this to your API registration endpoint
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'username': username,
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      // User registered successfully, show success toast
+      Fluttertoast.showToast(
+        msg: "Registration Successful!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+      );
+
+      // Now log in the user
+      await login(username, password);
+    } else {
+      Fluttertoast.showToast(
+        msg: "Registration failed: ${response.body}",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 2,
+      );
+    }
+  }
+
+  Future<void> login(String username, String password) async {
     final response = await http.post(
       Uri.parse('http://192.168.220.229:8000/api/login/'), // Adjust this to your API login endpoint
       headers: {'Content-Type': 'application/json'},
@@ -60,20 +99,11 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => HomepageScreen()),
       );
     } else {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text('Login Failed'),
-          content: Text(
-            'Error: ${response.body}\nStatus Code: ${response.statusCode}',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
-            ),
-          ],
-        ),
+      Fluttertoast.showToast(
+        msg: "Login failed: ${response.body}",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 2,
       );
     }
   }
@@ -115,9 +145,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 50),
-                // Login Heading
+                // Registration Heading
                 Text(
-                  'Log in to your account',
+                  'Create a new account',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
@@ -126,11 +156,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 40),
-                // Email/Username Field
+                // Username Field
                 TextField(
                   controller: _usernameController,
                   decoration: InputDecoration(
-                    labelText: 'Email or Username',
+                    labelText: 'Username',
+                    labelStyle: TextStyle(color: Colors.grey),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                // Email Field
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email Address',
                     labelStyle: TextStyle(color: Colors.grey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -158,10 +205,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+                SizedBox(height: 20),
+                // Confirm Password Field
+                TextField(
+                  controller: _confirmPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    labelStyle: TextStyle(color: Colors.grey),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blue),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
                 SizedBox(height: 30),
-                // Login Button
+                // Register Button
                 ElevatedButton(
-                  onPressed: login,
+                  onPressed: register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
                     padding: EdgeInsets.symmetric(vertical: 16),
@@ -170,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   child: Text(
-                    'Log in',
+                    'Register',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -179,26 +243,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 15),
-                // Forgot Password Link
-                TextButton(
-                  onPressed: () {
-                    // Handle forgot password action
-                  },
-                  child: Text(
-                    'Forgot password?',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 30),
-                // Registration Redirect
+                // Already have an account? Redirect to Login
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "Don't have an account? ",
+                      "Already have an account? ",
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 14,
@@ -206,14 +256,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        // Navigate to registration screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => RegisterScreen()),
-                        );
+                        Navigator.pop(context);  // Go back to login screen
                       },
                       child: Text(
-                        'Sign up',
+                        'Log in',
                         style: TextStyle(
                           color: Colors.blue,
                           fontSize: 14,

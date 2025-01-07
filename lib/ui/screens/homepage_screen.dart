@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:question_nswer/ui/screens/ask_now_screen.dart';
+import 'package:question_nswer/ui/screens/chat_screen.dart';
 import 'package:question_nswer/ui/screens/experts_screen.dart';
 import 'package:question_nswer/ui/screens/message_screen.dart';
 import 'account_screen.dart';
@@ -23,7 +25,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
     MessageScreen(),
     AskNowScreen(),
     ExpertsListScreen(),
-    AccountPage(),
+    AccountScreen(),
   ];
 
   @override
@@ -37,7 +39,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
           children: [
             Text(
               "just",
-              style: TextStyle(color: Colors.blue, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.blue,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
             Text(
               "answer",
@@ -58,11 +63,16 @@ class _HomepageScreenState extends State<HomepageScreen> {
         activeColor: Colors.blue,
         inactiveColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.chat_bubble), label: "Inbox"),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.add), label: "Ask Now"),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.group), label: "Experts"),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.person), label: "Account"),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.home), label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.chat_bubble), label: "Inbox"),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.add), label: "Ask Now"),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.group), label: "Experts"),
+          BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.person), label: "Account"),
         ],
       ),
     );
@@ -70,10 +80,13 @@ class _HomepageScreenState extends State<HomepageScreen> {
 }
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  HomeScreen({super.key});
+
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   Future<List<dynamic>> fetchQuestions() async {
-    final String token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM2MjQzNjcxLCJpYXQiOjE3MzYxNTcyNzEsImp0aSI6ImQ3NjczZTM4OGM5MjQyNTNiMmE3ZWUwZjJmMzRjMTgyIiwidXNlcl9pZCI6Nn0.GaLFfOp4RgaFLqga9FcnWc6smPSueOBoEFDMnkoaeko';
+    final String? token = await _secureStorage.read(key: 'auth_token');
+
     final response = await http.get(
       Uri.parse("http://192.168.220.229:8000/api/questions"),
       headers: {
@@ -89,7 +102,8 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future<List<dynamic>> fetchExperts() async {
-    final response = await http.get(Uri.parse("http://192.168.220.229:8000/api/experts"));
+    final response =
+        await http.get(Uri.parse("http://192.168.220.229:8000/api/experts"));
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final random = Random();
@@ -124,7 +138,8 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Text(
                       "Active Questions",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     SizedBox(height: 10),
                     ListView.builder(
@@ -138,7 +153,8 @@ class HomeScreen extends StatelessWidget {
                           margin: EdgeInsets.only(bottom: 10),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundImage: NetworkImage('https://via.placeholder.com/150'),
+                              backgroundImage: NetworkImage(
+                                  'https://via.placeholder.com/150'),
                             ),
                             title: Text("Dr. Joe"),
                             subtitle: Column(
@@ -198,12 +214,14 @@ class HomeScreen extends StatelessWidget {
                         elevation: 2,
                         child: Container(
                           height: 180,
-                          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                          padding: EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 10),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               CircleAvatar(
-                                backgroundImage: NetworkImage('https://via.placeholder.com/150'),
+                                backgroundImage: NetworkImage(
+                                    'https://via.placeholder.com/150'),
                                 radius: 30,
                               ),
                               SizedBox(height: 10),
@@ -220,9 +238,39 @@ class HomeScreen extends StatelessWidget {
                               ),
                               SizedBox(height: 5),
                               ElevatedButton.icon(
-                                onPressed: () {},
-                                icon: Icon(CupertinoIcons.chat_bubble_2_fill, size: 16),
-                                label: Text("Ask", style: TextStyle(fontSize: 14)),
+                                onPressed: () async {
+                                  // Retrieve the auth token from secure storage
+                                  final String? authToken = await _secureStorage
+                                      .read(key: 'auth_token');
+
+                                  if (authToken != null) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ChatScreen(
+                                          expertName: "sample name",// Replace with the actual field for expert's name
+                                          expertImage: "", // Replace with the actual field for expert's image
+                                          expertCategory: expert[
+                                              'categories'][0].toString(), // Replace with the actual field for expert's category
+                                          recipientId: expert[
+                                              'user'], // Replace with the field containing recipient ID
+                                          authToken: authToken,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    // Handle the case where authToken is null
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Authentication token not found')),
+                                    );
+                                  }
+                                },
+                                icon: Icon(CupertinoIcons.chat_bubble_2_fill,
+                                    size: 16),
+                                label:
+                                    Text("Ask", style: TextStyle(fontSize: 14)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
                                 ),

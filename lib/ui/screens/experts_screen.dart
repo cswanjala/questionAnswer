@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:question_nswer/ui/screens/chat_screen.dart';
 import 'package:question_nswer/services/service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -33,17 +34,10 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Text(
-          "Live Experts in 150+ categories",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        title: Text("Live Experts in 150+ categories"),
         centerTitle: true,
+        backgroundColor: Colors.blue,
+        automaticallyImplyLeading: false,  // No back arrow
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -51,7 +45,7 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Favourite Experts",
+              "They are here to serve you",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Expanded(
@@ -87,7 +81,6 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
                           title: expert['title'] ?? "N/A",
                           rating: expert['average_rating']?.toDouble() ?? 0.0,
                           categories: expert['categories'] ?? [],
-                          buttonLabel: index % 2 == 0 ? "Ask" : "Add",
                         );
                       },
                     );
@@ -108,28 +101,54 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
     required String title,
     required double rating,
     required List<int> categories,
-    required String buttonLabel,
   }) {
     return Card(
       margin: EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.grey[300],
-          radius: 30,
-          child: Text(
-            title.substring(0, 1).toUpperCase(),
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-        ),
-        title: Text(
-          "User ID: $userId",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Title: $title"),
-            SizedBox(height: 5),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.grey[300],
+                  radius: 30,
+                  child: Text(
+                    title.substring(0, 1).toUpperCase(),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "User ID: $userId",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "Title: $title",
+                        style: TextStyle(color: Colors.grey[700]),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(CupertinoIcons.heart, color: Colors.red),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Added to favourites")),
+                    );
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
             Row(
               children: [
                 _buildStarRating(rating),
@@ -140,38 +159,45 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
                 ),
               ],
             ),
-            Text("Categories: ${categories.join(", ")}"),
-          ],
-        ),
-        trailing: ElevatedButton(
-          onPressed: () {
-            if (authToken != null) {  // Ensure the token is not null before navigating
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(
-                    expertName: "User ID $userId",
-                    expertImage: "", // Placeholder, no image provided in API
-                    expertCategory: title, 
-                    authToken: authToken!,
-                    recipientId: userId,
-                  ),
-                ),
-              );
-            } else {
-              print("Auth token is missing");
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: buttonLabel == "Ask" ? Colors.blue : Colors.grey[200],
-            minimumSize: Size(60, 30),
-          ),
-          child: Text(
-            buttonLabel,
-            style: TextStyle(
-              color: buttonLabel == "Ask" ? Colors.white : Colors.black,
+            SizedBox(height: 8),
+            Text(
+              "Categories: ${categories.join(", ")}",
+              style: TextStyle(color: Colors.grey[700]),
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
+            SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: () {
+                  if (authToken != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          expertName: "User ID $userId",
+                          expertImage: "", // Placeholder, no image provided in API
+                          expertCategory: title,
+                          authToken: authToken!,
+                          recipientId: userId,
+                        ),
+                      ),
+                    );
+                  } else {
+                    print("Auth token is missing");
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  minimumSize: Size(60, 30),
+                ),
+                child: Text(
+                  "Ask",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
