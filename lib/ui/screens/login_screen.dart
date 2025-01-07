@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:question_nswer/ui/screens/register_screen.dart';
-import 'homepage_screen.dart';  // Assuming the homepage screen is in the same directory
+import 'package:provider/provider.dart';
+import 'package:question_nswer/core/features/authentication/controllers/auth_provider.dart';
+import 'homepage_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({Key? key}) : super(key: key);
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -15,9 +14,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
-  Future<void> login() async {
+  Future<void> _login(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     final String username = _usernameController.text;
     final String password = _passwordController.text;
 
@@ -25,12 +25,12 @@ class _LoginScreenState extends State<LoginScreen> {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: Text('Error'),
-          content: Text('Username and password cannot be empty'),
+          title: const Text('Error'),
+          content: const Text('Username and password cannot be empty'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         ),
@@ -38,39 +38,23 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final response = await http.post(
-      Uri.parse('http://192.168.220.229:8000/api/login/'), // Adjust this to your API login endpoint
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'username': username,
-        'password': password,
-      }),
-    );
+    final success = await authProvider.login(username, password);
 
-    if (response.statusCode == 200) {
-      final responseData = json.decode(response.body);
-      final String token = responseData['access'];
-      final String userId = responseData['id'].toString(); // Ensure user_id is stored as a string
-
-      await _secureStorage.write(key: 'auth_token', value: token);
-      await _secureStorage.write(key: 'user_id', value: userId);
-
+    if (success) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomepageScreen()),
+        MaterialPageRoute(builder: (context) => const HomepageScreen()),
       );
     } else {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: Text('Login Failed'),
-          content: Text(
-            'Error: ${response.body}\nStatus Code: ${response.statusCode}',
-          ),
+          title: const Text('Login Failed'),
+          content: Text(authProvider.errorMessage ?? 'An error occurred'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         ),
@@ -80,6 +64,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -89,11 +75,11 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 40),
+                const SizedBox(height: 40),
                 // Logo
                 RichText(
                   textAlign: TextAlign.center,
-                  text: TextSpan(
+                  text: const TextSpan(
                     children: [
                       TextSpan(
                         text: 'just',
@@ -114,9 +100,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                SizedBox(height: 50),
+                const SizedBox(height: 50),
                 // Login Heading
-                Text(
+                const Text(
                   'Log in to your account',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -125,66 +111,70 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Colors.black87,
                   ),
                 ),
-                SizedBox(height: 40),
-                // Email/Username Field
+                const SizedBox(height: 40),
+                // Username Field
                 TextField(
                   controller: _usernameController,
                   decoration: InputDecoration(
                     labelText: 'Email or Username',
-                    labelStyle: TextStyle(color: Colors.grey),
+                    labelStyle: const TextStyle(color: Colors.grey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blue),
+                      borderSide: const BorderSide(color: Colors.blue),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // Password Field
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    labelStyle: TextStyle(color: Colors.grey),
+                    labelStyle: const TextStyle(color: Colors.grey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blue),
+                      borderSide: const BorderSide(color: Colors.blue),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
                 // Login Button
                 ElevatedButton(
-                  onPressed: login,
+                  onPressed: () => _login(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    'Log in',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: authProvider.isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : const Text(
+                          'Log in',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 // Forgot Password Link
                 TextButton(
                   onPressed: () {
                     // Handle forgot password action
                   },
-                  child: Text(
+                  child: const Text(
                     'Forgot password?',
                     style: TextStyle(
                       color: Colors.blue,
@@ -192,12 +182,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
                 // Registration Redirect
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
+                    const Text(
                       "Don't have an account? ",
                       style: TextStyle(
                         color: Colors.black,
@@ -206,13 +196,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        // Navigate to registration screen
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => RegisterScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
                         );
                       },
-                      child: Text(
+                      child: const Text(
                         'Sign up',
                         style: TextStyle(
                           color: Colors.blue,

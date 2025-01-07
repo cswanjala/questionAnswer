@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
+import 'package:question_nswer/core/services/api_service.dart';
 
 class AskNowScreen extends StatefulWidget {
   const AskNowScreen({super.key});
@@ -17,7 +17,8 @@ class _AskNowScreenState extends State<AskNowScreen> {
   int? _selectedCategoryId;
   final TextEditingController _questionController = TextEditingController();
   List<Map<String, dynamic>> _categories = [];
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  final ApiService _apiService = ApiService();
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -25,127 +26,69 @@ class _AskNowScreenState extends State<AskNowScreen> {
     _fetchCategories();
   }
 
-  // Fetch categories from the API
   Future<void> _fetchCategories() async {
-  final url = Uri.parse('http://192.168.220.229:8000/api/categories/'); // Replace with your API URL
-  try {
-    final response = await http.get(url);
-
-    // Check if the response status code is successful (2xx)
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
+    try {
+      final categories = await _apiService.fetchCategories();
+      log("Categories fetched successfully.");
       setState(() {
-        _categories = List<Map<String, dynamic>>.from(data);
+        _categories = categories;
       });
-    } else {
-      // Print the raw response body for debugging
-      print('Error: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      
-      // Handle API error
+    } catch (e) {
       Fluttertoast.showToast(
-        msg: "Failed to load categories (status code: ${response.statusCode})",
+        msg: "Failed to load categories: $e",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
         backgroundColor: Colors.red,
         textColor: Colors.white,
-        fontSize: 16.0,
       );
     }
-  } catch (e) {
-    // Print error for debugging
-    print('Error: $e');
-    
-    // Handle network error
-    Fluttertoast.showToast(
-      msg: "Network error from categories: $e",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
   }
-}
 
+  Future<void> _submitQuestion() async {
+    final questionContent = _questionController.text.trim();
+    final token = await const FlutterSecureStorage().read(key: 'auth_token');
 
-  // Submit the question to the API
-  Future<void> _submitQuestion(String questionContent, String token) async {
-    if (_selectedCategoryId == null || questionContent.isEmpty) {
+    if (_selectedCategoryId == null || questionContent.isEmpty || token == null) {
       Fluttertoast.showToast(
         msg: "Please select a category and enter a question.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
         backgroundColor: Colors.red,
         textColor: Colors.white,
-        fontSize: 16.0,
       );
       return;
     }
 
-    final url = Uri.parse('http://192.168.220.229:8000/api/questions/'); // Replace with your API URL
-    final headers = {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
-
-    final body = json.encode({
-      'content': questionContent,
-      'category': _selectedCategoryId,
+    setState(() {
+      _isSubmitting = true;
     });
 
-    log("body is $body");
-
     try {
-      final response = await http.post(url, headers: headers, body: body);
-
-    
-
-      if (response.statusCode == 201) {
-        final responseBody = json.decode(response.body);
-        final questionId = responseBody['id'];
-        final assignedExpert = responseBody['assigned_expert'];
-
-        // Show success toast
-        Fluttertoast.showToast(
-          msg: "Question successfully added! (ID: $questionId)\nAssigned Expert: $assignedExpert",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 2,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-      } else {
-        // Show error message from response
-        final responseBody = json.decode(response.body);
-        final errorMessage = response.statusCode.toString();
-        Fluttertoast.showToast(
-          msg: errorMessage,
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-      }
-    } catch (e) {
-      // Handle network error
+      await _apiService.submitQuestion(questionContent, token, _selectedCategoryId!);
       Fluttertoast.showToast(
-        msg: "Network error from submit question: $e",
+        msg: "Question submitted successfully!",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
+      _questionController.clear();
+      setState(() {
+        _selectedCategory = null;
+        _selectedCategoryId = null;
+      });
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Failed to submit question: $e",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
         backgroundColor: Colors.red,
         textColor: Colors.white,
-        fontSize: 16.0,
       );
-
-      log(e.toString());
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
     }
   }
 
@@ -153,127 +96,83 @@ class _AskNowScreenState extends State<AskNowScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Text(
-          "Ask Now",
-          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        title: const Text("Ask Now"),
         centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.black),
+        backgroundColor: Colors.blue,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Category Dropdown
-            Text(
+            const Text(
               "Choose a Category",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             if (_categories.isNotEmpty)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedCategory,
-                    hint: Text("Select a category"),
-                    isExpanded: true,
-                    items: _categories.map((category) {
-                      return DropdownMenuItem<String>(
-                        value: category['name'], // Category name
-                        child: Text(category['name']), // Category name displayed
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value;
-                        // Get the ID of the selected category
-                        _selectedCategoryId = _categories.firstWhere((category) => category['name'] == value)['id'];
-                      });
-                    },
-                  ),
-                ),
+              DropdownButton<String>(
+                value: _selectedCategory,
+                hint: const Text("Select a category"),
+                isExpanded: true,
+                items: _categories.map((category) {
+                  return DropdownMenuItem<String>(
+                    value: category['name'],
+                    child: Text(category['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                    _selectedCategoryId = _categories.firstWhere(
+                        (category) => category['name'] == value)['id'];
+                  });
+                },
               )
             else
-              CircularProgressIndicator(), // Show loading indicator if categories are still being fetched
-            SizedBox(height: 16),
-
-            // Question Input
-            Text(
+              const Center(child: CircularProgressIndicator()),
+            const SizedBox(height: 16),
+            const Text(
               "Ask Your Question",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Expanded(
-              child: Stack(
-                children: [
-                  TextField(
-                    controller: _questionController,
-                    maxLines: null,
-                    expands: true,
-                    textAlignVertical: TextAlignVertical.top,
-                    decoration: InputDecoration(
-                      hintText: "Type your question here...",
-                      contentPadding: EdgeInsets.only(left: 50, top: 10, right: 10, bottom: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.blue),
-                      ),
-                    ),
+              child: TextField(
+                controller: _questionController,
+                maxLines: null,
+                expands: true,
+                decoration: InputDecoration(
+                  hintText: "Type your question here...",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  Positioned(
-                    left: 12,
-                    bottom: 12,
-                    child: GestureDetector(
-                      onTap: () {
-                        // Handle attachment click
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Attachment clicked")),
-                        );
-                      },
-                      child: Icon(
-                        Icons.attach_file,
-                        color: Colors.grey,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                ),
+                textAlignVertical: TextAlignVertical.top,
               ),
             ),
-            SizedBox(height: 16),
-
-            // Submit Button
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () async {
-                  final questionContent = _questionController.text;
-                  final String? token = await _secureStorage.read(key: 'auth_token');
-                   // Replace with your token
-                  _submitQuestion(questionContent, token!);
-                },
+                onPressed: _isSubmitting ? null : _submitQuestion,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: _isSubmitting ? Colors.grey : Colors.blue,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
-                  "Send",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
+                child: _isSubmitting
+                    ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      )
+                    : const Text(
+                        "Submit Question",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
               ),
             ),
           ],

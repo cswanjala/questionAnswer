@@ -1,36 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:question_nswer/core/services/api_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:question_nswer/core/services/auth_service.dart';
 
-class AuthProvider with ChangeNotifier{
-  final ApiService _apiService = ApiService();
-  bool _isAuthenticated = false;
+class AuthProvider with ChangeNotifier {
+  final AuthService _authService = AuthService();
 
-  bool get isAuthenticated => _isAuthenticated;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
-  Future<void> login(String username,String password) async {
-    try {
-      final response = await _apiService.post("/login",{
-        "username":username,
-        "password":password,
-      });
-      _isAuthenticated = true;
-      notifyListeners();
-    } catch(e) {
-      print("login error: $e");
-    }
+  get errorMessage => null;
 
+  Future<bool> register(String username, String email, String password, String confirmPassword) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final success = await _authService.register(username, email, password, confirmPassword);
+
+    _isLoading = false;
+    notifyListeners();
+    return success;
   }
 
-  Future<void> register(String username,String password,String email) async {
-    try {
-      await _apiService.post("/user/",{
-        "username":username,
-        "password":password,
-        "email":email
-      });
-    } catch(e) {
-      print("Registration error: $e");
-    }
-  }
+  Future<bool> login(String username, String password) async {
+    _isLoading = true;
+    notifyListeners();
 
+    final success = await _authService.login(username, password);
+
+    _isLoading = false;
+    notifyListeners();
+    return success;
+  }
 }
