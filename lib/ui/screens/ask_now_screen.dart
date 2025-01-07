@@ -9,17 +9,7 @@ class AskNowScreen extends StatefulWidget {
 }
 
 class _AskNowScreenState extends State<AskNowScreen> {
-  String? _selectedCategory;
   final TextEditingController _questionController = TextEditingController();
-
-  // Sample categories
-  final List<String> _categories = [
-    "Health",
-    "Finance",
-    "Technology",
-    "Education",
-    "Relationships",
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -27,57 +17,26 @@ class _AskNowScreenState extends State<AskNowScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: Text(
+        title: const Text(
           "Ask Now",
           style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Category Dropdown
-            Text(
-              "Choose a Category",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCategory,
-                  hint: Text("Select a category"),
-                  isExpanded: true,
-                  items: _categories.map((category) {
-                    return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCategory = value;
-                    });
-                  },
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // Question Input
-            Text(
+            // Question Input Label
+            const Text(
               "Ask Your Question",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
+
+            // Question Input
             Expanded(
               child: Stack(
                 children: [
@@ -88,13 +47,13 @@ class _AskNowScreenState extends State<AskNowScreen> {
                     textAlignVertical: TextAlignVertical.top,
                     decoration: InputDecoration(
                       hintText: "Type your question here...",
-                      contentPadding: EdgeInsets.only(left: 50, top: 10, right: 10, bottom: 10),
+                      contentPadding: const EdgeInsets.only(left: 50, top: 10, right: 10, bottom: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.blue),
+                        borderSide: const BorderSide(color: Colors.blue),
                       ),
                     ),
                   ),
@@ -105,10 +64,10 @@ class _AskNowScreenState extends State<AskNowScreen> {
                       onTap: () {
                         // Handle attachment click
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Attachment clicked")),
+                          const SnackBar(content: Text("Attachment clicked")),
                         );
                       },
-                      child: Icon(
+                      child: const Icon(
                         CupertinoIcons.paperclip,
                         color: Colors.grey,
                         size: 24,
@@ -118,32 +77,32 @@ class _AskNowScreenState extends State<AskNowScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Submit Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  if (_selectedCategory != null && _questionController.text.isNotEmpty) {
+                  if (_questionController.text.isNotEmpty) {
                     // Handle the submission of the question
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Your question has been sent!")),
+                      const SnackBar(content: Text("Your question has been sent!")),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Please select a category and enter a question.")),
+                      const SnackBar(content: Text("Please enter a question.")),
                     );
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  padding: EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text(
+                child: const Text(
                   "Send",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
