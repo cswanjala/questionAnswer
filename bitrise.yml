@@ -4,8 +4,8 @@ project_type: flutter
 workflows:
   deploy:
     description: |
-      Builds and deploys app using [Deploy to bitrise.io Step](https://devcenter.bitrise.io/en/getting-started/getting-started-with-flutter-apps.html#deploying-a-flutter-app).
-
+      Builds and deploys the iOS app as an IPA file using Bitrise.
+      
       If you build for iOS, make sure to set up code signing secrets on Bitrise for a successful build.
 
       Next steps:
@@ -29,18 +29,18 @@ workflows:
         inputs:
         - project_location: "$BITRISE_FLUTTER_PROJECT_LOCATION"
         - platform: ios
-        - ios_output_type: archive  # Ensure the iOS build is archived
+        - ios_output_type: ipa  # Ensure this generates an IPA
     - xcode-archive@3:
         inputs:
-        - export_method: app-store  # Change to 'ad-hoc' or 'development' for different types of distribution
-        - export_xcargs: "-allowProvisioningUpdates"
+        - export_method: app-store  # You can change this to 'ad-hoc' or 'development' for other types of distribution
+        - export_xcargs: "-allowProvisioningUpdates"  # Allow provisioning profile updates if needed
     - deploy-to-bitrise-io@2:
         inputs:
         - deploy_path: "./build/ios/ipa"  # This will upload the IPA as an artifact
   primary:
     description: |
       Builds project and runs tests.
-
+      
       Next steps:
       - Check out [Getting started with Flutter apps](https://devcenter.bitrise.io/en/getting-started/getting-started-with-flutter-apps.html).
     steps:
