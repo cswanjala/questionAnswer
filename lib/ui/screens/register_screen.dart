@@ -1,95 +1,110 @@
 import 'package:flutter/material.dart';
 import 'package:question_nswer/ui/screens/login_screen.dart';
 
-class RegisterPage extends StatelessWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  bool isExpert = false; // Tracks whether the user is an expert
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        padding: const EdgeInsets.all(20.0),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF4A90E2), Color(0xFF50C9C3)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Center(
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                "Create an Account",
+              Text(
+                "Create Account",
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
+                  color: Colors.blue,
                 ),
               ),
               const SizedBox(height: 20),
               TextField(
                 decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  hintText: "Email",
-                  prefixIcon: const Icon(Icons.email, color: Color(0xFF4A90E2)),
+                  labelText: "Email",
+                  prefixIcon: Icon(Icons.email, color: Colors.blue),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
                   ),
+                  filled: true,
+                  fillColor: Colors.grey[200],
                 ),
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
               TextField(
                 obscureText: true,
                 decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  hintText: "Password",
-                  prefixIcon: const Icon(Icons.lock, color: Color(0xFF4A90E2)),
+                  labelText: "Password",
+                  prefixIcon: Icon(Icons.lock, color: Colors.blue),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
                   ),
+                  filled: true,
+                  fillColor: Colors.grey[200],
                 ),
               ),
               const SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Are you an expert?",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Switch(
+                    value: isExpert,
+                    onChanged: (value) {
+                      setState(() {
+                        isExpert = value;
+                      });
+                    },
+                    activeColor: Colors.blue,
+                    inactiveThumbColor: Colors.grey,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
+                  Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 50),
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  backgroundColor: Colors.white,
                 ),
                 child: const Text(
                   "Register",
-                  style: TextStyle(
-                    color: Color(0xFF4A90E2),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18),
                 ),
               ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () {
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
                   );
                 },
                 child: const Text(
                   "Already have an account? Login",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(color: Colors.blue),
                 ),
               ),
             ],
