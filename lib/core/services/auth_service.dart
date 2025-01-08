@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:dio/dio.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
 import 'api_service.dart';
