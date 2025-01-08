@@ -37,6 +37,14 @@ workflows:
     - deploy-to-bitrise-io@2:
         inputs:
         - deploy_path: "./build/ios/ipa"  # This will upload the IPA as an artifact
+    # Optional: Upload IPA to S3 bucket (replace with your S3 upload step)
+    - some_s3_upload_step:
+        inputs:
+        - bucket_name: "your-bucket-name"
+        - access_key: "your-access-key"
+        - secret_key: "your-secret-key"
+        - file_path: "./build/ios/ipa/your_app_name.ipa"  # Replace with the actual path to your IPA
+
   primary:
     description: |
       Builds project and runs tests.
@@ -66,9 +74,4 @@ workflows:
 meta:
   bitrise.io:
     stack: osx-xcode-16.0.x
-    machine_type_id: g2-m1.4core
-app:
-  envs:
-  - BITRISE_FLUTTER_PROJECT_LOCATION: "."
-    opts:
-      is_expand: false
+    machine_
