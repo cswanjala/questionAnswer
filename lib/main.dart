@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:question_nswer/ui/screens/homepage_screen.dart';
+import 'package:question_nswer/ui/screens/register_screen.dart';
 
 
 void main() => runApp(AnswersApp());
@@ -16,7 +17,7 @@ class AnswersApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       themeMode: ThemeMode.system,
-      home: HomepageScreen(),
+      home: RegisterPage(),
     );
   }
 }
