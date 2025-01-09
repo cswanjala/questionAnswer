@@ -1,44 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
-import 'package:question_nswer/core/services/api_service.dart';
+import 'package:question_nswer/core/features/experts/controllers/experts_provider.dart';
 import 'package:question_nswer/ui/screens/chat_screen.dart';
 
-class ExpertsListScreen extends StatefulWidget {
+class ExpertsListScreen extends StatelessWidget {
   const ExpertsListScreen({super.key});
 
   @override
-  _ExpertsListScreenState createState() => _ExpertsListScreenState();
-}
-
-class _ExpertsListScreenState extends State<ExpertsListScreen> {
-  late Future<List<Map<String, dynamic>>> _expertsFuture;
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
-  String? _authToken;
-
-  @override
-  void initState() {
-    super.initState();
-    _expertsFuture = ApiService().fetchExperts();
-    _loadAuthToken(); // Load auth token on initialization
-  }
-
-  // Function to retrieve the authToken from secure storage
-  Future<void> _loadAuthToken() async {
-    _authToken = await _secureStorage.read(key: ApiConstants.authTokenKey);
-    setState(() {}); // Rebuild the widget after fetching the authToken
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final expertsProvider = Provider.of<ExpertsProvider>(context, listen: false);
+
+    // Fetch experts when the screen is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      expertsProvider.fetchExperts();
+    });
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(ApiConstants.expertsListTitle),
         centerTitle: true,
         backgroundColor: Colors.blue,
-        automaticallyImplyLeading: false,  // No back arrow
+        automaticallyImplyLeading: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -47,38 +31,30 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
           children: [
             Text(
               ApiConstants.expertsListSubtitle,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Expanded(
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: _expertsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        "Failed to load experts: ${snapshot.error}",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              child: Consumer<ExpertsProvider>(
+                builder: (context, provider, child) {
+                  if (provider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (provider.experts.isEmpty) {
                     return Center(
                       child: Text(
                         ApiConstants.noExpertsMessage,
-                        style: TextStyle(color: Colors.grey),
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     );
                   } else {
-                    final experts = snapshot.data!;
                     return ListView.builder(
-                      itemCount: experts.length,
+                      itemCount: provider.experts.length,
                       itemBuilder: (context, index) {
-                        final expert = experts[index];
+                        final expert = provider.experts[index];
                         return _buildExpertCard(
                           context: context,
+                          expertName: expert['user']['username'],
                           id: expert['id'],
-                          userId: expert['user'],
+                          userId: expert['user']['id'],
                           title: expert['title'] ?? ApiConstants.defaultTitle,
                           rating: expert['average_rating']?.toDouble() ?? 0.0,
                           categories: expert['categories'],
@@ -97,6 +73,7 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
 
   Widget _buildExpertCard({
     required BuildContext context,
+    required String expertName,
     required int id,
     required int userId,
     required String title,
@@ -104,7 +81,7 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
     required List<dynamic> categories,
   }) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
@@ -117,22 +94,22 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
                   radius: 30,
                   child: Text(
                     title.substring(0, 1).toUpperCase(),
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "${ApiConstants.userIdLabel} $userId",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        expertName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        "${ApiConstants.titleLabel} $title",
+                        title,
                         style: TextStyle(color: Colors.grey[700]),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -140,7 +117,7 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(CupertinoIcons.heart, color: Colors.red),
+                  icon: const Icon(Icons.favorite, color: Colors.red),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(ApiConstants.addedToFavouritesMessage)),
@@ -149,50 +126,47 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Row(
               children: [
                 _buildStarRating(rating),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
                   "$rating/5",
-                  style: TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: Colors.grey),
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               "${ApiConstants.categoriesLabel}: ${categories.join(", ")}",
               style: TextStyle(color: Colors.grey[700]),
               overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton(
                 onPressed: () {
-                  if (_authToken != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          expertName: "${ApiConstants.userIdLabel} $userId",
-                          expertImage: "", // Placeholder, no image provided in API
-                          expertCategory: title,
-                          authToken: _authToken!,
-                          recipientId: userId,
-                        ),
+                  final authToken = Provider.of<ExpertsProvider>(context, listen: false).authToken;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatScreen(
+                        expertName: "${ApiConstants.userIdLabel} $userId",
+                        expertImage: "", // Placeholder for image
+                        expertCategory: title,
+                        authToken: authToken,
+                        recipientId: userId,
                       ),
-                    );
-                  } else {
-                    print(ApiConstants.authTokenMissingMessage);
-                  }
-                },
+                    ),
+                  );
+                                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  minimumSize: Size(60, 30),
+                  minimumSize: const Size(60, 30),
                 ),
-                child: Text(
+                child: const Text(
                   ApiConstants.askButtonLabel,
                   style: TextStyle(color: Colors.white),
                 ),
@@ -213,10 +187,10 @@ class _ExpertsListScreenState extends State<ExpertsListScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (int i = 0; i < fullStars; i++)
-          Icon(Icons.star, color: Colors.amber, size: 16),
-        if (hasHalfStar) Icon(Icons.star_half, color: Colors.amber, size: 16),
+          const Icon(Icons.star, color: Colors.amber, size: 16),
+        if (hasHalfStar) const Icon(Icons.star_half, color: Colors.amber, size: 16),
         for (int i = 0; i < emptyStars; i++)
-          Icon(Icons.star_border, color: Colors.amber, size: 16),
+          const Icon(Icons.star_border, color: Colors.amber, size: 16),
       ],
     );
   }

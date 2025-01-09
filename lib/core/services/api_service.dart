@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
@@ -6,11 +8,18 @@ class ApiService {
   final Dio _dio = Dio(BaseOptions(baseUrl: ApiConstants.baseUrl));
   final FlutterSecureStorage _storage = FlutterSecureStorage();
 
+
   Future<String?> _getToken() async {
     return await _storage.read(key: "auth_token");
   }
 
+  // Public method to expose the token indirectly
+  Future<String?> getAuthToken() async {
+    return await _getToken();
+  }
+
   Future<Response> get(String endpoint) async {
+    log("dio.get reached...");
     final token = await _getToken();
     _dio.options.headers["Authorization"] = "Bearer $token";
     return await _dio.get(endpoint);
@@ -18,8 +27,10 @@ class ApiService {
 
   Future<Response> post(String endpoint, Map<String, dynamic> data, {bool requiresAuth = true}) async {
     if (requiresAuth) {
+      log("inside ger response but from apiservice");
       final token = await _getToken();
       _dio.options.headers["Authorization"] = "Bearer $token";
+      log("already done");
     }
     return await _dio.post(endpoint, data: data);
   }

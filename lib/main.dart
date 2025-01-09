@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:question_nswer/core/features/authentication/controllers/auth_provider.dart';
+import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
+import 'package:question_nswer/core/features/experts/controllers/experts_provider.dart';
+import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
 import 'package:question_nswer/ui/screens/splash_screen.dart';
 
 void main() {
@@ -15,6 +18,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(
           create: (context) => AuthProvider(),
         ),
+        ChangeNotifierProvider(create: (context) => QuestionsProvider()),
+        ChangeNotifierProvider(create: (context) => ExpertsProvider()),
+        ChangeNotifierProvider(create: (context) => CategoriesProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

@@ -1,7 +1,7 @@
 import 'dart:developer';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
-import 'api_service.dart';
+import 'package:question_nswer/core/services/api_service.dart';
 
 class AnswerService {
   final ApiService _apiService = ApiService();

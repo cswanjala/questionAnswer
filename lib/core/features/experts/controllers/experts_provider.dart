@@ -7,9 +7,13 @@ class ExpertsProvider with ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  Future<String?> get authToken => _apiService.getAuthToken(); //expose the user token
+
+  
 
   List<Map<String, dynamic>> _experts = [];
   List<Map<String, dynamic>> get experts => _experts;
+  
 
   // Fetch all experts
   Future<void> fetchExperts() async {

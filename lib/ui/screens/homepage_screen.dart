@@ -1,14 +1,14 @@
-import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:question_nswer/core/features/experts/controllers/experts_provider.dart';
+import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
 import 'package:question_nswer/ui/screens/ask_now_screen.dart';
 import 'package:question_nswer/ui/screens/chat_screen.dart';
 import 'package:question_nswer/ui/screens/experts_screen.dart';
 import 'package:question_nswer/ui/screens/message_screen.dart';
 import 'account_screen.dart';
+import 'package:intl/intl.dart';
 
 class HomepageScreen extends StatefulWidget {
   const HomepageScreen({super.key});
@@ -21,10 +21,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    HomeScreen(),
+    const HomeScreen(),
     MessageScreen(),
-    AskNowScreen(),
-    ExpertsListScreen(),
+    const AskNowScreen(),
+    const ExpertsListScreen(),
     AccountScreen(),
   ];
 
@@ -40,9 +40,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
             Text(
               "just",
               style: TextStyle(
-                  color: Colors.blue,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
+                color: Colors.blue,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             Text(
               "answer",
@@ -79,113 +80,131 @@ class _HomepageScreenState extends State<HomepageScreen> {
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
 
-  Future<List<dynamic>> fetchQuestions() async {
-    final String? token = await _secureStorage.read(key: 'auth_token');
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  // void initState() {
+  //   super.initState();
 
-    final response = await http.get(
-      Uri.parse("http://192.168.220.229:8000/api/questions"),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+  //   // Defer state update to after the first frame is rendered
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     final questionsProvider =
+  //         Provider.of<QuestionsProvider>(context, listen: false);
+  //     questionsProvider
+  //         .fetchQuestions(); // Fetch questions after the build process
+  //   });
+  // }
+  void initState() {
+    super.initState();
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception("Failed to fetch questions");
-    }
-  }
-
-  Future<List<dynamic>> fetchExperts() async {
-    final response =
-        await http.get(Uri.parse("http://192.168.220.229:8000/api/experts"));
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final random = Random();
-      return List.generate(
-        2,
-        (_) => data[random.nextInt(data.length)],
-      );
-    } else {
-      throw Exception("Failed to fetch experts");
-    }
+    // Fetch data once during initialization
+    final questionsProvider =
+        Provider.of<QuestionsProvider>(context, listen: false);
+    final expertsProvider =
+        Provider.of<ExpertsProvider>(context, listen: false);
+    questionsProvider.fetchQuestions();
+    expertsProvider.fetchExperts();
   }
 
   @override
   Widget build(BuildContext context) {
+    final questionsProvider = Provider.of<QuestionsProvider>(context);
+    final expertsProvider = Provider.of<ExpertsProvider>(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FutureBuilder<List<dynamic>>(
-            future: fetchQuestions(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Text("Error: ${snapshot.error}");
-              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Text("No active questions");
-              } else {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Active Questions",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    SizedBox(height: 10),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: snapshot.data!.length,
-                      itemBuilder: (context, index) {
-                        final question = snapshot.data![index];
-                        return Card(
-                          elevation: 2,
-                          margin: EdgeInsets.only(bottom: 10),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: NetworkImage(
-                                  'https://via.placeholder.com/150'),
+          // Questions Section
+          if (questionsProvider.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (questionsProvider.questions.isEmpty)
+            const Text("No active questions")
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Active Questions",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 10),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: questionsProvider.questions.length,
+                  itemBuilder: (context, index) {
+                    final question = questionsProvider.questions[index];
+                    final assignedExpert = question['assigned_expert'];
+
+                    // Parse created_at
+                    final createdAt = question['created_at'] != null
+                        ? DateTime.parse(question['created_at'])
+                        : null;
+
+                    // Format date
+                    final formattedDate = createdAt != null
+                        ? DateFormat('MMM d, yyyy h:mm a')
+                            .format(createdAt) // Example: Jan 8, 2025 1:12 PM
+                        : "Unknown time";
+
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          backgroundImage:
+                              NetworkImage('https://via.placeholder.com/150'),
+                        ),
+                        title: Text(
+                          assignedExpert != null
+                              ? assignedExpert['user']['username']
+                              : 'Unassigned',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              assignedExpert != null
+                                  ? "${assignedExpert['title']} | $formattedDate"
+                                  : "Waiting for an expert to be assigned | $formattedDate",
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
                             ),
-                            title: Text("Dr. Joe"),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Board Certified MD | Yesterday at 01:12"),
-                                SizedBox(height: 5),
-                                Text(
-                                  question['content'],
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                SizedBox(height: 5),
-                                Text(
-                                  "Waiting for the Board Certified MD",
-                                  style: TextStyle(color: Colors.blue),
-                                ),
-                              ],
+                            const SizedBox(height: 5),
+                            Text(
+                              question['content'],
+                              style: const TextStyle(color: Colors.black),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              }
-            },
-          ),
-          SizedBox(height: 20),
+                            const SizedBox(height: 5),
+                            Text(
+                              assignedExpert != null
+                                  ? "Expert ${assignedExpert['user']['username']} is responding"
+                                  : "Waiting for an expert to respond",
+                              style: const TextStyle(color: Colors.blue),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                )
+              ],
+            ),
+          const SizedBox(height: 20),
+
+          // Favorite Experts Section
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+            children: const [
               Text(
                 "Favorite Experts",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -196,95 +215,88 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 10),
-          FutureBuilder<List<dynamic>>(
-            future: fetchExperts(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Text("Error: ${snapshot.error}");
-              } else {
-                final experts = snapshot.data!;
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: experts.map((expert) {
-                    return Expanded(
-                      child: Card(
-                        elevation: 2,
-                        child: Container(
-                          height: 180,
-                          padding: EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 10),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircleAvatar(
-                                backgroundImage: NetworkImage(
-                                    'https://via.placeholder.com/150'),
-                                radius: 30,
-                              ),
-                              SizedBox(height: 10),
-                              Text(
-                                "User ID ${expert['user']}",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 5),
-                              Text(
-                                expert['title'],
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              SizedBox(height: 5),
-                              ElevatedButton.icon(
-                                onPressed: () async {
-                                  // Retrieve the auth token from secure storage
-                                  final String? authToken = await _secureStorage
-                                      .read(key: 'auth_token');
-
-                                  if (authToken != null) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ChatScreen(
-                                          expertName: "sample name",// Replace with the actual field for expert's name
-                                          expertImage: "", // Replace with the actual field for expert's image
-                                          expertCategory: expert[
-                                              'categories'][0].toString(), // Replace with the actual field for expert's category
-                                          recipientId: expert[
-                                              'user'], // Replace with the field containing recipient ID
-                                          authToken: authToken,
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    // Handle the case where authToken is null
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(
-                                              'Authentication token not found')),
-                                    );
-                                  }
-                                },
-                                icon: Icon(CupertinoIcons.chat_bubble_2_fill,
-                                    size: 16),
-                                label:
-                                    Text("Ask", style: TextStyle(fontSize: 14)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                ),
-                              ),
-                            ],
+          const SizedBox(height: 10),
+          if (expertsProvider.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (expertsProvider.experts.isEmpty)
+            const Text("No experts found")
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: expertsProvider.experts.take(2).map((expert) {
+                return Expanded(
+                  child: Card(
+                    elevation: 2,
+                    child: Container(
+                      height: 180,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircleAvatar(
+                            backgroundImage:
+                                NetworkImage('https://via.placeholder.com/150'),
+                            radius: 30,
                           ),
-                        ),
+                          const SizedBox(height: 10),
+                          Text(
+                            expert['user']['username'] ?? "Expert",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            expert['categories'] != null &&
+                                    expert['categories'] is List &&
+                                    expert['categories'].isNotEmpty
+                                ? expert['categories'].join(
+                                    ', ') // Convert list to a comma-separated string
+                                : "No category", // Fallback if categories is empty or null
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 5),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final authToken = Provider.of<ExpertsProvider>(
+                                      context,
+                                      listen: false)
+                                  .authToken;
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatScreen(
+                                    expertName: expert['user']['username'],
+                                    expertImage: "",
+                                    expertCategory: expert['categories'] !=
+                                                null &&
+                                            expert['categories'] is List
+                                        ? expert['categories'].join(
+                                            ', ') // Convert list to a string
+                                        : "No category",
+                                    recipientId: expert['id'],
+                                    authToken: authToken,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(CupertinoIcons.chat_bubble_2_fill,
+                                size: 16),
+                            label: const Text("Ask",
+                                style: TextStyle(fontSize: 14)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ),
                 );
-              }
-            },
-          ),
+              }).toList(),
+            ),
         ],
       ),
     );

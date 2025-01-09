@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:question_nswer/core/services/answer_service.dart';
+import 'package:question_nswer/core/services/answers/answers_service.dart';
 
 class AnswerProvider with ChangeNotifier {
   final AnswerService _answerService = AnswerService();

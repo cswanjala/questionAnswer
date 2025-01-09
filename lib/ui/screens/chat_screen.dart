@@ -8,7 +8,7 @@ class ChatScreen extends StatefulWidget {
   final String expertImage;
   final String expertCategory;
   final int recipientId;
-  final String authToken;
+  final Future<String?> authToken;
 
   const ChatScreen({
     super.key,
@@ -196,7 +196,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-void navigateToChatScreen(BuildContext context, String expertName, String expertImage, String expertCategory, int recipientId, String authToken) {
+void navigateToChatScreen(BuildContext context, String expertName, String expertImage, String expertCategory, int recipientId, Future<String?> authToken) {
   Navigator.push(
     context,
     MaterialPageRoute(

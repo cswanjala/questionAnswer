@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:question_nswer/core/services/api_service.dart';
@@ -12,11 +14,13 @@ class QuestionsProvider with ChangeNotifier {
   List<Map<String, dynamic>> get questions => _questions;
 
   Future<void> fetchQuestions() async {
+    log("----fetch questions hit-----");
     _isLoading = true;
     notifyListeners();
 
     try {
       final response = await _apiService.get('/questions');
+      log(response.toString());
       if (response.statusCode == 200) {
         _questions = List<Map<String, dynamic>>.from(response.data);
         notifyListeners();
@@ -35,11 +39,15 @@ class QuestionsProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    log("add question hit");
+
     try {
-      final response = await _apiService.post('/questions', {
+      final response = await _apiService.post('/questions/', {
         'content': content,
         'category': categoryId,
       });
+
+      log(response.toString());
 
       if (response.statusCode == 201) {
         Fluttertoast.showToast(msg: "Question added successfully!");
@@ -51,6 +59,7 @@ class QuestionsProvider with ChangeNotifier {
       }
     } catch (e) {
       Fluttertoast.showToast(msg: "Error adding question: ${e.toString()}");
+      log(e.toString());
       return false;
     } finally {
       _isLoading = false;
