@@ -58,6 +58,7 @@ class ExpertsListScreen extends StatelessWidget {
                           title: expert['title'] ?? ApiConstants.defaultTitle,
                           rating: expert['average_rating']?.toDouble() ?? 0.0,
                           categories: expert['categories'],
+                          profilePicture: expert['user']['profile_picture']
                         );
                       },
                     );
@@ -79,6 +80,7 @@ class ExpertsListScreen extends StatelessWidget {
     required String title,
     required double rating,
     required List<dynamic> categories,
+    String? profilePicture, // Add profilePicture as an optional parameter
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -92,10 +94,15 @@ class ExpertsListScreen extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor: Colors.grey[300],
                   radius: 30,
-                  child: Text(
+                  backgroundImage: profilePicture != null && profilePicture.isNotEmpty
+                      ? NetworkImage(profilePicture) // Display the profile picture
+                      : null,
+                  child: profilePicture == null || profilePicture.isEmpty
+                      ? Text(
                     title.substring(0, 1).toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
+                  )
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -154,14 +161,14 @@ class ExpertsListScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (context) => ChatScreen(
                         expertName: "${ApiConstants.userIdLabel} $userId",
-                        expertImage: "", // Placeholder for image
+                        expertImage: profilePicture ?? "", // Pass the profile picture
                         expertCategory: title,
                         authToken: authToken,
                         recipientId: userId,
                       ),
                     ),
                   );
-                                },
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   minimumSize: const Size(60, 30),

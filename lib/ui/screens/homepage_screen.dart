@@ -224,6 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: expertsProvider.experts.take(2).map((expert) {
+                final profilePicture = expert['user']['profile_picture'];
                 return Expanded(
                   child: Card(
                     elevation: 2,
@@ -234,9 +235,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const CircleAvatar(
-                            backgroundImage:
-                                NetworkImage('https://via.placeholder.com/150'),
+                          CircleAvatar(
+                            backgroundImage: profilePicture != null &&
+                                    profilePicture.isNotEmpty
+                                ? NetworkImage(profilePicture)
+                                : const AssetImage(
+                                        'assets/images/default_avatar.png')
+                                    as ImageProvider,
                             radius: 30,
                           ),
                           const SizedBox(height: 10),
@@ -250,9 +255,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             expert['categories'] != null &&
                                     expert['categories'] is List &&
                                     expert['categories'].isNotEmpty
-                                ? expert['categories'].join(
-                                    ', ') // Convert list to a comma-separated string
-                                : "No category", // Fallback if categories is empty or null
+                                ? expert['categories'].join(', ')
+                                : "No category",
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontSize: 12),
                           ),
@@ -269,13 +273,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 MaterialPageRoute(
                                   builder: (context) => ChatScreen(
                                     expertName: expert['user']['username'],
-                                    expertImage: "",
-                                    expertCategory: expert['categories'] !=
-                                                null &&
-                                            expert['categories'] is List
-                                        ? expert['categories'].join(
-                                            ', ') // Convert list to a string
-                                        : "No category",
+                                    expertImage: profilePicture ?? "",
+                                    expertCategory:
+                                        expert['categories'] != null &&
+                                                expert['categories'] is List
+                                            ? expert['categories'].join(', ')
+                                            : "No category",
                                     recipientId: expert['id'],
                                     authToken: authToken,
                                   ),
