@@ -1,162 +1,142 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
+import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
+import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
+import 'dart:io';
+
+import 'package:image_picker/image_picker.dart';
 
 class AskNowScreen extends StatefulWidget {
-  const AskNowScreen({super.key});
+  const AskNowScreen({Key? key}) : super(key: key);
 
   @override
   _AskNowScreenState createState() => _AskNowScreenState();
 }
 
-class _AskNowScreenState extends State<AskNowScreen> {
-  final TextEditingController _questionController = TextEditingController();
 
-  void _showAttachmentOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Send a Question As",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              GridView(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1,
-                ),
-                children: [
-                  _buildAttachmentOption(
-                    icon: CupertinoIcons.doc_text,
-                    label: "Document",
-                    color: Colors.blue,
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Document selected")),
-                      );
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: CupertinoIcons.photo,
-                    label: "Image",
-                    color: Colors.green,
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Image selected")),
-                      );
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: CupertinoIcons.videocam,
-                    label: "Video",
-                    color: Colors.red,
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Video selected")),
-                      );
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: CupertinoIcons.music_note,
-                    label: "Audio",
-                    color: Colors.orange,
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Audio selected")),
-                      );
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: CupertinoIcons.arrow_down_doc,
-                    label: "PDF",
-                    color: Colors.purple,
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("PDF selected")),
-                      );
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: CupertinoIcons.camera,
-                    label: "Camera",
-                    color: Colors.teal,
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Camera selected")),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
+
+class _AskNowScreenState extends State<AskNowScreen> {
+  String? _selectedCategory;
+  int? _selectedCategoryId;
+  final TextEditingController _questionController = TextEditingController();
+  File? _selectedImage; // To store the selected image
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+  Future<void> _loadCategories() async {
+    final categoriesProvider =
+    Provider.of<CategoriesProvider>(context, listen: false);
+    await categoriesProvider.fetchCategories();
   }
 
-  Widget _buildAttachmentOption({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: color.withOpacity(0.2),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _submitQuestion() async {
+    final questionContent = _questionController.text.trim();
+
+    if (_selectedCategoryId == null || questionContent.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "Please select a category and enter a question.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      return;
+    }
+
+    final questionsProvider =
+    Provider.of<QuestionsProvider>(context, listen: false);
+    final success = await questionsProvider.addQuestion(
+      questionContent,
+      _selectedCategoryId!,
+      image: _selectedImage, // Pass the selected image
     );
+
+    if (success) {
+      Fluttertoast.showToast(
+        msg: "Question submitted successfully!",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
+      _questionController.clear();
+      setState(() {
+        _selectedCategory = null;
+        _selectedCategoryId = null;
+        _selectedImage = null; // Clear the selected image
+      });
+    } else {
+      Fluttertoast.showToast(
+        msg: "Failed to submit question.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final categoriesProvider = Provider.of<CategoriesProvider>(context);
+    final isSubmitting = Provider.of<QuestionsProvider>(context).isLoading;
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Centered Question Label
-            Center(
-              child: Text(
-                "Ask Your Question",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+            const Text(
+              "Choose a Category",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-
-            // Question Input
+            if (categoriesProvider.isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (categoriesProvider.categories.isNotEmpty)
+              DropdownButton<String>(
+                value: _selectedCategory,
+                hint: const Text("Select a category"),
+                isExpanded: true,
+                items: categoriesProvider.categories.map((category) {
+                  return DropdownMenuItem<String>(
+                    value: category['name'],
+                    child: Text(category['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                    _selectedCategoryId = categoriesProvider.categories
+                        .firstWhere(
+                            (category) => category['name'] == value)['id'];
+                  });
+                },
+              )
+            else
+              const Text("No categories available."),
+            const SizedBox(height: 16),
+            const Text(
+              "Ask Your Question",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
             Expanded(
               child: Stack(
                 children: [
@@ -164,72 +144,76 @@ class _AskNowScreenState extends State<AskNowScreen> {
                     controller: _questionController,
                     maxLines: null,
                     expands: true,
-                    textAlignVertical: TextAlignVertical.top,
                     decoration: InputDecoration(
                       hintText: "Type your question here...",
-                      contentPadding: const EdgeInsets.only(
-                          left: 50, top: 10, right: 10, bottom: 10),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.blue),
-                      ),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 48), // Adjust padding
                     ),
+                    textAlignVertical: TextAlignVertical.top,
                   ),
                   Positioned(
-                    left: 12,
-                    bottom: 12,
+                    bottom: 8,
+                    left: 8,
                     child: GestureDetector(
-                      onTap: _showAttachmentOptions,
-                      child: const Icon(
-                        CupertinoIcons.paperclip,
-                        color: Colors.grey,
-                        size: 24,
+                      onTap: _pickImage,
+                      child: Icon(
+                        Icons.image,
+                        size: 28,
+                        color: Colors.grey[600],
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
 
-            // Submit Button
+            const SizedBox(height: 16),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_questionController.text.isNotEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Your question has been sent!")),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Please enter a question.")),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              child: GestureDetector(
+                onTap: isSubmitting ? null : _submitQuestion,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: isSubmitting
+                        ? LinearGradient(colors: [Colors.grey, Colors.grey])
+                        : LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      if (!isSubmitting)
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.5),
+                          offset: Offset(0, 4),
+                          blurRadius: 8,
+                        ),
+                    ],
                   ),
-                ),
-                child: const Text(
-                  "Send",
-                  style: TextStyle(
-                      fontSize: 16,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  alignment: Alignment.center,
+                  child: isSubmitting
+                      ? const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                      : const Text(
+                    "Submit Question",
+                    style: TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white),
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
+
           ],
         ),
       ),
     );
   }
 }
+

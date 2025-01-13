@@ -1,104 +1,151 @@
 import 'package:flutter/material.dart';
-import 'package:question_nswer/ui/screens/crypto_memebership_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:question_nswer/ui/screens/add_credit_card_screen.dart';
+import 'package:question_nswer/ui/screens/splash_screen.dart';
 
-class AccountPage extends StatelessWidget {
-  const AccountPage({super.key});
+class AccountScreen extends StatelessWidget {
+  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
+
+  AccountScreen({Key? key}) : super(key: key);
+
+  Future<void> _logout(BuildContext context) async {
+    await secureStorage.delete(key: 'auth_token'); // Delete auth token
+
+    // Navigate to the splash screen and remove all previous routes
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => SplashScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header Section
-          Container(
-            padding: EdgeInsets.all(20),
-            color: Colors.blueAccent,
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage: NetworkImage(
-                      "https://via.placeholder.com/150"), // Replace with actual image URL
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 20),
+            _buildProfileSection(),
+            Divider(thickness: 1),
+            _buildMembershipInfo(),
+            Divider(thickness: 1),
+            _buildAccountOptions(context),
+            Spacer(),
+            Center(
+              child: ElevatedButton(
+                onPressed: () => _logout(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
-                SizedBox(height: 10),
-                Text(
-                  "John Doe",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                child: Text(
+                  'Logout',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
-                Text(
-                  "john.doe@example.com",
-                  style: TextStyle(fontSize: 14, color: Colors.white70),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    "Edit Profile",
-                    style: TextStyle(color: Colors.blueAccent),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-          // Account Options
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.all(10),
-              children: [
-                // Crypto Membership
-                Card(
-                  child: ListTile(
-                    leading: Icon(Icons.currency_bitcoin, color: Colors.orangeAccent),
-                    title: Text("Crypto Membership"),
-                    subtitle: Text("Join our crypto membership program"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => CryptoMembershipPage()),
-                      );
-                    },
-                  ),
-                ),
-                // Other Account Options
-                Card(
-                  child: ListTile(
-                    leading: Icon(Icons.settings, color: Colors.blueAccent),
-                    title: Text("Settings"),
-                    subtitle: Text("Manage your preferences"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      // Navigate to Settings Page
-                    },
-                  ),
-                ),
-                Card(
-                  child: ListTile(
-                    leading: Icon(Icons.logout, color: Colors.redAccent),
-                    title: Text("Log Out"),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      // Handle Log Out
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  Widget _buildProfileSection() {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 40,
+          backgroundColor: Colors.blue[100],
+          child: Icon(
+            Icons.person,
+            size: 50,
+            color: Colors.blue,
+          ),
+        ),
+        SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'John Doe',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'johndoe@example.com',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMembershipInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Membership Information',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Status: Premium Member',
+          style: TextStyle(fontSize: 14, color: Colors.black87),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'Expiry: 12/31/2025',
+          style: TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccountOptions(BuildContext context) {
+  return Column(
+    children: [
+      ListTile(
+        leading: Icon(Icons.settings, color: Colors.blue),
+        title: Text('Settings', style: TextStyle(fontSize: 16)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: () {
+          // Navigate to settings screen (to be implemented)
+        },
+      ),
+      ListTile(
+        leading: Icon(Icons.lock, color: Colors.blue),
+        title: Text('Change Password', style: TextStyle(fontSize: 16)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: () {
+          // Navigate to change password screen (to be implemented)
+        },
+      ),
+      ListTile(
+        leading: Icon(Icons.credit_card, color: Colors.blue),
+        title: Text('Add Credit Card', style: TextStyle(fontSize: 16)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: () {
+          // Navigate to Add Credit Card Screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddCreditCardScreen()),
+          );
+        },
+      ),
+      ListTile(
+        leading: Icon(Icons.help, color: Colors.blue),
+        title: Text('Help & Support', style: TextStyle(fontSize: 16)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: () {
+          // Navigate to help & support screen (to be implemented)
+        },
+      ),
+    ],
+  );
+}
 }

@@ -28,7 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  fluttertoast: ^8.2.1
+  fluttertoast: ^8.2.10
   flutter:
     sdk: flutter
 
@@ -37,6 +37,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.2.2
   flutter_secure_storage: ^9.2.3
+  get: ^4.6.6
+  dio: ^5.7.0
+  provider: ^6.1.2
+  intl: ^0.20.1
+  image_picker: ^1.1.2
   
 
 dev_dependencies:
