@@ -25,15 +25,16 @@ class ApiService {
     return await _dio.get(endpoint);
   }
 
-  Future<Response> post(String endpoint, Map<String, dynamic> data, {bool requiresAuth = true}) async {
+  Future<Response> post(String endpoint, dynamic data, {bool requiresAuth = true}) async {
     if (requiresAuth) {
-      log("inside ger response but from apiservice");
+      log("inside get response but from ApiService");
       final token = await _getToken();
       _dio.options.headers["Authorization"] = "Bearer $token";
       log("already done");
     }
     return await _dio.post(endpoint, data: data);
   }
+
 
   Future<Response> put(String endpoint, Map<String, dynamic> data, {bool requiresAuth = true}) async {
     if (requiresAuth) {

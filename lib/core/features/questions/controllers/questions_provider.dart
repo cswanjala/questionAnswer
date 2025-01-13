@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:question_nswer/core/services/api_service.dart';
 
+import 'dart:io';
+import 'package:dio/dio.dart';
+
 class QuestionsProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
 
@@ -35,23 +38,23 @@ class QuestionsProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> addQuestion(String content, int categoryId) async {
+  Future<bool> addQuestion(String content, int categoryId, {File? image}) async {
     _isLoading = true;
     notifyListeners();
 
-    log("add question hit");
-
     try {
-      final response = await _apiService.post('/questions/', {
+      FormData formData = FormData.fromMap({
         'content': content,
         'category': categoryId,
+        if (image != null)
+          'image': await MultipartFile.fromFile(image.path,
+              filename: image.path.split('/').last),
       });
 
-      log(response.toString());
+      final response = await _apiService.post('/questions/', formData);
 
       if (response.statusCode == 201) {
         Fluttertoast.showToast(msg: "Question added successfully!");
-        await fetchQuestions(); // Refresh the questions list
         return true;
       } else {
         Fluttertoast.showToast(msg: "Failed to add question: ${response.data}");
@@ -59,7 +62,6 @@ class QuestionsProvider with ChangeNotifier {
       }
     } catch (e) {
       Fluttertoast.showToast(msg: "Error adding question: ${e.toString()}");
-      log(e.toString());
       return false;
     } finally {
       _isLoading = false;

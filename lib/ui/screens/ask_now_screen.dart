@@ -3,6 +3,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
 import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
+import 'dart:io';
+
+import 'package:image_picker/image_picker.dart';
 
 class AskNowScreen extends StatefulWidget {
   const AskNowScreen({Key? key}) : super(key: key);
@@ -11,21 +14,34 @@ class AskNowScreen extends StatefulWidget {
   _AskNowScreenState createState() => _AskNowScreenState();
 }
 
+
+
 class _AskNowScreenState extends State<AskNowScreen> {
   String? _selectedCategory;
   int? _selectedCategoryId;
   final TextEditingController _questionController = TextEditingController();
+  File? _selectedImage; // To store the selected image
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
   }
-
   Future<void> _loadCategories() async {
     final categoriesProvider =
-        Provider.of<CategoriesProvider>(context, listen: false);
+    Provider.of<CategoriesProvider>(context, listen: false);
     await categoriesProvider.fetchCategories();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
   }
 
   Future<void> _submitQuestion() async {
@@ -43,9 +59,12 @@ class _AskNowScreenState extends State<AskNowScreen> {
     }
 
     final questionsProvider =
-        Provider.of<QuestionsProvider>(context, listen: false);
+    Provider.of<QuestionsProvider>(context, listen: false);
     final success = await questionsProvider.addQuestion(
-        questionContent, _selectedCategoryId!);
+      questionContent,
+      _selectedCategoryId!,
+      image: _selectedImage, // Pass the selected image
+    );
 
     if (success) {
       Fluttertoast.showToast(
@@ -59,6 +78,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
       setState(() {
         _selectedCategory = null;
         _selectedCategoryId = null;
+        _selectedImage = null; // Clear the selected image
       });
     } else {
       Fluttertoast.showToast(
@@ -118,47 +138,82 @@ class _AskNowScreenState extends State<AskNowScreen> {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: TextField(
-                controller: _questionController,
-                maxLines: null,
-                expands: true,
-                decoration: InputDecoration(
-                  hintText: "Type your question here...",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                children: [
+                  TextField(
+                    controller: _questionController,
+                    maxLines: null,
+                    expands: true,
+                    decoration: InputDecoration(
+                      hintText: "Type your question here...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 48), // Adjust padding
+                    ),
+                    textAlignVertical: TextAlignVertical.top,
                   ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
-                textAlignVertical: TextAlignVertical.top,
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Icon(
+                        Icons.image,
+                        size: 28,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+
+            const SizedBox(height: 16),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isSubmitting ? null : _submitQuestion,
-                style: ElevatedButton.styleFrom(
+              child: GestureDetector(
+                onTap: isSubmitting ? null : _submitQuestion,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: isSubmitting
+                        ? LinearGradient(colors: [Colors.grey, Colors.grey])
+                        : LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      if (!isSubmitting)
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.5),
+                          offset: Offset(0, 4),
+                          blurRadius: 8,
+                        ),
+                    ],
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: isSubmitting ? Colors.grey : Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  alignment: Alignment.center,
+                  child: isSubmitting
+                      ? const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                      : const Text(
+                    "Submit Question",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-                child: isSubmitting
-                    ? const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      )
-                    : const Text(
-                        "Submit Question",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
               ),
             ),
+
           ],
         ),
       ),
     );
   }
 }
+
