@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class ChatScreen extends StatefulWidget {
   final String expertName;
@@ -24,13 +25,33 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  late final WebSocketChannel _channel;
   final TextEditingController _messageController = TextEditingController();
   List<Map<String, dynamic>> _messages = [];
 
   @override
   void initState() {
     super.initState();
-    fetchMessages();
+    _channel = WebSocketChannel.connect(
+      Uri.parse('ws://192.168.220.229:8000/ws/chat/${widget.recipientId}/'),
+    );
+
+    _channel.stream.listen((message) {
+      setState(() {
+        _messages.add(json.decode(message));
+      });
+    });
+  }
+
+  void _sendMessage(String content) {
+    _channel.sink.add(json.encode({'message': content}));
+    _messageController.clear();
+  }
+
+  @override
+  void dispose() {
+    _channel.sink.close();
+    super.dispose();
   }
 
   Future<void> fetchMessages() async {
@@ -164,26 +185,11 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(CupertinoIcons.paperclip, color: Colors.blue),
-                  onPressed: () {
-                    // Handle file attachments
-                  },
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: "Type your message...",
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                IconButton(
                   icon: Icon(CupertinoIcons.paperplane_fill, color: Colors.blue),
                   onPressed: () {
                     final content = _messageController.text.trim();
                     if (content.isNotEmpty) {
-                      sendMessage(content);
+                      _sendMessage(content);
                     }
                   },
                 ),
