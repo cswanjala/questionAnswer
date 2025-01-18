@@ -279,8 +279,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 expert['categories'] is List
                                             ? expert['categories'].join(', ')
                                             : "No category",
-                                    recipientId: expert['id'],
                                     authToken: authToken,
+                                    senderUsername: 'salama',
+                                    recipientUsername: 'makena',
                                   ),
                                 ),
                               );

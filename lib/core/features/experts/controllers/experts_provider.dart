@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:question_nswer/core/services/api_service.dart';
@@ -7,13 +9,37 @@ class ExpertsProvider with ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
-  Future<String?> get authToken => _apiService.getAuthToken(); //expose the user token
-
   
+  Future<String?> get authToken => _apiService.getAuthToken(); // Expose the user token
 
+  Map<String, dynamic> _currentUser = {}; // Store current user data
+  Map<String, dynamic> get currentUser => _currentUser; // Getter for current user data
+  
   List<Map<String, dynamic>> _experts = [];
   List<Map<String, dynamic>> get experts => _experts;
-  
+
+  // Fetch the current user data
+  Future<void> fetchCurrentUser() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.get('/user');
+      if (response.statusCode == 200) {
+        _currentUser = response.data;
+        notifyListeners();
+        Fluttertoast.showToast(msg: "Current user data fetched successfully!");
+      } else {
+        Fluttertoast.showToast(msg: "Failed to fetch current user: ${response.statusMessage}");
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Error fetching current user: ${e.toString()}");
+      log(e.toString());
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   // Fetch all experts
   Future<void> fetchExperts() async {

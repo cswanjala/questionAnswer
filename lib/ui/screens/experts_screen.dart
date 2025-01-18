@@ -11,8 +11,9 @@ class ExpertsListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final expertsProvider = Provider.of<ExpertsProvider>(context, listen: false);
 
-    // Fetch experts when the screen is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Fetch current user data when the screen is built
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await expertsProvider.fetchCurrentUser();
       expertsProvider.fetchExperts();
     });
 
@@ -50,6 +51,8 @@ class ExpertsListScreen extends StatelessWidget {
                       itemCount: provider.experts.length,
                       itemBuilder: (context, index) {
                         final expert = provider.experts[index];
+                        final currentUser = provider.currentUser;
+
                         return _buildExpertCard(
                           context: context,
                           expertName: expert['user']['username'],
@@ -58,7 +61,9 @@ class ExpertsListScreen extends StatelessWidget {
                           title: expert['title'] ?? ApiConstants.defaultTitle,
                           rating: expert['average_rating']?.toDouble() ?? 0.0,
                           categories: expert['categories'],
-                          profilePicture: expert['user']['profile_picture']
+                          profilePicture: expert['user']['profile_picture'],
+                          senderUsername: currentUser['username'] ?? 'Unknown', // Use username from currentUser
+                          recipientUsername: expert['user']['username'],
                         );
                       },
                     );
@@ -80,7 +85,9 @@ class ExpertsListScreen extends StatelessWidget {
     required String title,
     required double rating,
     required List<dynamic> categories,
-    String? profilePicture, // Add profilePicture as an optional parameter
+    required String senderUsername,
+    required String recipientUsername,
+    String? profilePicture,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -95,13 +102,13 @@ class ExpertsListScreen extends StatelessWidget {
                   backgroundColor: Colors.grey[300],
                   radius: 30,
                   backgroundImage: profilePicture != null && profilePicture.isNotEmpty
-                      ? NetworkImage(profilePicture) // Display the profile picture
+                      ? NetworkImage(profilePicture)
                       : null,
                   child: profilePicture == null || profilePicture.isEmpty
                       ? Text(
-                    title.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  )
+                          title.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        )
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -160,11 +167,12 @@ class ExpertsListScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatScreen(
-                        expertName: "${ApiConstants.userIdLabel} $userId",
-                        expertImage: profilePicture ?? "", // Pass the profile picture
+                        senderUsername: senderUsername, // Pass senderUsername
+                        recipientUsername: recipientUsername, // Pass recipientUsername
+                        expertName: expertName,
+                        expertImage: profilePicture ?? "",
                         expertCategory: title,
                         authToken: authToken,
-                        recipientId: userId,
                       ),
                     ),
                   );
