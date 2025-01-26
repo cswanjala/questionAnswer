@@ -63,8 +63,10 @@ class _MessageScreenState extends State<MessageScreen> {
     final Map<String, dynamic> lastMessages = {};
 
     for (var message in messages) {
-      final sender = message['sender_username'];
-      final receiver = message['recipient_username'];
+      final sender = message['recipient_username'];
+      final receiver = message['sender_username'];
+      log("---test---- sender "+sender);
+      log("---test---- sender "+receiver);
 
       if (receiver == username) {
         lastMessages[sender] = message;
