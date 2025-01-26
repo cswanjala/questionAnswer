@@ -1,10 +1,79 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:question_nswer/core/features/users/controllers/user_messages_provider.dart';
-import 'package:question_nswer/core/features/users/controllers/users_provider.dart';
-import 'chat_screen.dart';
+import 'dart:developer';
 
-class MessageScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'chat_screen.dart'; // Import ChatScreen
+
+class MessageScreen extends StatefulWidget {
+  @override
+  _MessageScreenState createState() => _MessageScreenState();
+}
+
+class _MessageScreenState extends State<MessageScreen> {
+  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
+  List<Map<String, dynamic>> _messages = [];
+  Map<String, dynamic> _lastMessages = {};
+  bool _isLoading = true;
+  String? _currentUsername;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeMessages();
+  }
+
+  Future<void> _initializeMessages() async {
+    final token = await secureStorage.read(key: 'auth_token');
+    final username = await secureStorage.read(key: 'username');
+    _currentUsername = username;
+
+    if (token != null && username != null) {
+      await _fetchMessages(token, username);
+    } else {
+      log('Error: Unable to fetch auth token or username.');
+    }
+  }
+
+  Future<void> _fetchMessages(String token, String username) async {
+    final url = Uri.parse('http://192.168.1.127:8000/api/messages/');
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> messages = json.decode(response.body);
+        setState(() {
+          _messages = List<Map<String, dynamic>>.from(messages);
+          _lastMessages = _getLastMessages(_messages, username);
+          _isLoading = false;
+        });
+      } else {
+        log('Failed to load messages: ${response.body}');
+      }
+    } catch (e) {
+      log('Error fetching messages: $e');
+    }
+  }
+
+  Map<String, dynamic> _getLastMessages(List<Map<String, dynamic>> messages, String username) {
+    final Map<String, dynamic> lastMessages = {};
+
+    for (var message in messages) {
+      final sender = message['sender_username'];
+      final receiver = message['recipient_username'];
+
+      if (receiver == username) {
+        lastMessages[sender] = message;
+      }
+    }
+
+    return lastMessages;
+  }
+
   @override
   Widget build(BuildContext context) {
     final messageProvider = Provider.of<MessageProvider>(context);
@@ -43,139 +112,42 @@ class MessageScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Messages",
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        centerTitle: true,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: [Colors.blue, Colors.purple],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight),
-          ),
-        ),
+        title: Text('Messages'),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-              colors: [Colors.grey[200]!, Colors.white],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Text("Active Messages",
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87)),
-                  SizedBox(width: 8),
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: Colors.red,
-                    child: Text(filteredMessages.length.toString(),
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold)),
-                  )
-                ],
-              ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        itemCount: _lastMessages.length,
+        itemBuilder: (context, index) {
+          final key = _lastMessages.keys.elementAt(index);
+          final message = _lastMessages[key];
+
+          return ListTile(
+            leading: CircleAvatar(
+              child: Text(key[0].toUpperCase()),
             ),
-            Expanded(
-              child: messageProvider.isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : filteredMessages.isEmpty
-                      ? Center(child: Text("No messages found."))
-                      : ListView.builder(
-                          itemCount: filteredMessages.length,
-                          itemBuilder: (context, index) {
-                            final message = filteredMessages[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ChatScreen(
-                                      senderUsername: user?["username"],
-                                      recipientUsername:
-                                          message['recipient_username'],
-                                      expertName: message['recipient_username'],
-                                      expertImage: message[
-                                              'recipient_profile_picture'] ??
-                                          'assets/default_profile.png',
-                                      expertCategory: 'Category Placeholder',
-                                      authToken:
-                                          Future.value(userProvider.authToken!),
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                          color: Colors.grey.withOpacity(0.3),
-                                          blurRadius: 6,
-                                          offset: Offset(0, 4)),
-                                    ],
-                                  ),
-                                  child: ListTile(
-                                    contentPadding: EdgeInsets.all(12),
-                                    leading: CircleAvatar(
-                                      radius: 28,
-                                      backgroundImage: message[
-                                                  'recipient_profile_picture'] !=
-                                              null
-                                          ? NetworkImage(message[
-                                              'recipient_profile_picture'])
-                                          : AssetImage(
-                                                  'assets/default_profile.png')
-                                              as ImageProvider,
-                                    ),
-                                    title: Text(message['recipient_username'],
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16)),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          message['message'],
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.black87),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        SizedBox(height: 6),
-                                        Text(
-                                          message['timestamp'],
-                                          style: TextStyle(
-                                              fontSize: 12, color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-            ),
-          ],
-        ),
+            title: Text(key),
+            subtitle: Text(message['message']),
+            onTap: () {
+              log(message.toString());
+              log("The current username(senderUsername) is "+message['sender_username']);
+              log("The receiver is "+message['recipient_username']);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    senderUsername: message['sender_username'],
+                    recipientUsername: message['recipient_username'],
+                    expertName: key,
+                    expertImage: null, // Adjust as needed
+                    expertCategory: 'category', // Adjust as needed
+                    authToken: secureStorage.read(key: 'auth_token'),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
