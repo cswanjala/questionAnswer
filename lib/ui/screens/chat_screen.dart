@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:developer'; // Import the log function
 
 class ChatScreen extends StatefulWidget {
   final String senderUsername;
@@ -51,7 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Initialize WebSocket connection
       _initializeWebSocket(roomName, token);
     } else {
-      print('Error: Unable to fetch auth token.');
+      log('Error: Unable to fetch auth token.');
     }
   }
 
@@ -69,21 +71,21 @@ class _ChatScreenState extends State<ChatScreen> {
           _messages = messages
               .map((msg) => {
                     'message': msg['message'],
-                    'sender': msg['sender_username'],
-                    'receiver': msg['recipient_username'],
+                    'sender_username': msg['sender'],
+                    'recipient_username': msg['receiver'],
                   })
               .toList();
           _isLoading = false;
         });
         _scrollToBottom();
       } else {
-        print('Failed to load previous messages: ${response.body}');
+        log('Failed to load previous messages: ${response.body}');
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('Error fetching previous messages: $e');
+      log('Error fetching previous messages: $e');
       setState(() {
         _isLoading = false;
       });
@@ -99,16 +101,21 @@ class _ChatScreenState extends State<ChatScreen> {
     _channel.stream.listen(
       (message) {
         final decodedMessage = json.decode(message);
+        log('Received message: $decodedMessage');
         setState(() {
-          _messages.add(decodedMessage);
+          _messages.add({
+            'message': decodedMessage['message'],
+            'sender_username': decodedMessage['sender'],
+            'recipient_username': decodedMessage['receiver'],
+          });
         });
         _scrollToBottom();
       },
       onError: (error) {
-        print('WebSocket Error: $error');
+        log('WebSocket Error: $error');
       },
       onDone: () {
-        print('WebSocket connection closed.');
+        log('WebSocket connection closed.');
       },
     );
   }
@@ -195,8 +202,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
                           final message = _messages[index];
+                          log('Message sender: ${message['sender_username']}');
+                          log('Current user: ${widget.senderUsername}');
                           final isUserMessage =
-                              message['sender'] == widget.senderUsername;
+                              message['sender_username'] == widget.senderUsername;
+                          log('Is user message: $isUserMessage');
                           return Align(
                             alignment: isUserMessage
                                 ? Alignment.centerRight
