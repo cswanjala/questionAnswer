@@ -7,7 +7,7 @@ class ChatScreen extends StatefulWidget {
   final String senderUsername;
   final String recipientUsername;
   final String expertName;
-  final String expertImage;
+  final String? expertImage; // Make expertImage optional
   final String expertCategory;
   final Future<String?> authToken;
 
@@ -16,8 +16,8 @@ class ChatScreen extends StatefulWidget {
     required this.senderUsername,
     required this.recipientUsername,
     required this.expertName,
-    required this.expertImage,
-    required this.expertCategory,
+    this.expertImage, // Allow null values
+    this.expertCategory = 'category', // Set default value
     required this.authToken,
   });
 
@@ -68,10 +68,10 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages = messages
               .map((msg) => {
-                    'message': msg['message'],
-                    'sender': msg['sender'],
-                    'receiver': msg['receiver'],
-                  })
+            'message': msg['message'],
+            'sender': msg['sender'],
+            'receiver': msg['receiver'],
+          })
               .toList();
           _isLoading = false;
         });
@@ -97,7 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Listen for incoming messages
     _channel.stream.listen(
-      (message) {
+          (message) {
         final decodedMessage = json.decode(message);
         setState(() {
           _messages.add(decodedMessage);
@@ -156,11 +156,12 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         title: Row(
           children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(widget.expertImage),
-              radius: 20,
-            ),
-            SizedBox(width: 10),
+            if (widget.expertImage != null)
+              CircleAvatar(
+                backgroundImage: NetworkImage(widget.expertImage!),
+                radius: 20,
+              ),
+            if (widget.expertImage != null) SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -187,40 +188,40 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
-                    ? Center(child: Text('No messages yet.'))
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          final isUserMessage =
-                              message['sender'] == widget.senderUsername;
-                          return Align(
-                            alignment: isUserMessage
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Container(
-                              padding: EdgeInsets.all(12),
-                              margin: EdgeInsets.symmetric(vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isUserMessage
-                                    ? Colors.blue
-                                    : Colors.grey[200],
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                message['message'],
-                                style: TextStyle(
-                                  color: isUserMessage
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                ? Center(child: Text('No messages yet.'))
+                : ListView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.all(16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                final isUserMessage =
+                    message['sender'] == widget.senderUsername;
+                return Align(
+                  alignment: isUserMessage
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    padding: EdgeInsets.all(12),
+                    margin: EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isUserMessage
+                          ? Colors.blue
+                          : Colors.grey[200],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      message['message'],
+                      style: TextStyle(
+                        color: isUserMessage
+                            ? Colors.white
+                            : Colors.black,
                       ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
