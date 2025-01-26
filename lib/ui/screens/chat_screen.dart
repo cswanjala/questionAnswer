@@ -69,10 +69,10 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages = messages
               .map((msg) => {
-            'message': msg['message'],
-            'sender': msg['sender'],
-            'receiver': msg['receiver'],
-          })
+                    'message': msg['message'],
+                    'sender': msg['sender_username'],
+                    'receiver': msg['recipient_username'],
+                  })
               .toList();
           _isLoading = false;
         });
@@ -98,7 +98,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Listen for incoming messages
     _channel.stream.listen(
-          (message) {
+      (message) {
         final decodedMessage = json.decode(message);
         setState(() {
           _messages.add(decodedMessage);
@@ -189,40 +189,40 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
-                ? Center(child: Text('No messages yet.'))
-                : ListView.builder(
-              controller: _scrollController,
-              padding: EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isUserMessage =
-                    message['sender'] == widget.senderUsername;
-                return Align(
-                  alignment: isUserMessage
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    padding: EdgeInsets.all(12),
-                    margin: EdgeInsets.symmetric(vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isUserMessage
-                          ? Colors.blue
-                          : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      message['message'],
-                      style: TextStyle(
-                        color: isUserMessage
-                            ? Colors.white
-                            : Colors.black,
+                    ? Center(child: Text('No messages yet.'))
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: EdgeInsets.all(16),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final message = _messages[index];
+                          final isUserMessage =
+                              message['sender'] == widget.senderUsername;
+                          return Align(
+                            alignment: isUserMessage
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Container(
+                              padding: EdgeInsets.all(12),
+                              margin: EdgeInsets.symmetric(vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isUserMessage
+                                    ? Colors.blue
+                                    : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                message['message'],
+                                style: TextStyle(
+                                  color: isUserMessage
+                                      ? Colors.white
+                                      : Colors.black,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
