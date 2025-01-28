@@ -14,15 +14,19 @@ class UserProvider with ChangeNotifier {
   Future<void> fetchCurrentUser() async {
     _isLoading = true;
     notifyListeners();
+    log("[UserProvider] Fetching current user...");
 
     try {
       // Step 1: Get auth token and username from storage
+      log("[UserProvider] Retrieving user data from storage...");
       final userData = await _apiService.getUserData();
+      log("[UserProvider] User data retrieved: $userData");
+
       final username = userData['username'];
       final token = userData['auth_token'];
 
       if (token == null || username == null) {
-        log("No auth token or username found.");
+        log("[UserProvider] No auth token or username found.");
         _currentUser = null;
         _isLoading = false;
         notifyListeners();
@@ -30,33 +34,43 @@ class UserProvider with ChangeNotifier {
       }
 
       // Step 2: Fetch all users from /users endpoint
+      log("[UserProvider] Fetching users from API...");
       final response = await _apiService.get('/users');
+      log("[UserProvider] API Response Status: ${response.statusCode}");
+
       if (response.statusCode == 200) {
         List<dynamic> users = response.data;
+        log("[UserProvider] Users received: ${users.length} users found.");
 
         // Step 3: Find the user with the matching username
         final user = users.firstWhere(
           (user) => user['username'] == username,
-          orElse: () => null,
+          orElse: () {
+            log("[UserProvider] No matching user found for username: $username");
+            return null;
+          },
         );
 
         if (user != null) {
           _currentUser = user;
-          log("User found: $_currentUser");
+          log("[UserProvider] User found: $_currentUser");
         } else {
-          log("No matching user found.");
+          log("[UserProvider] No user matched.");
           _currentUser = null;
         }
       } else {
-        log("Failed to fetch users: ${response.statusCode}");
+        log("[UserProvider] Failed to fetch users. Status Code: ${response.statusCode}");
+        log("[UserProvider] Response Data: ${response.data}");
         _currentUser = null;
       }
-    } catch (e) {
-      log("Error fetching user data: $e");
+    } catch (e, stackTrace) {
+      log("[UserProvider] Error fetching user data: $e",
+          stackTrace: stackTrace);
       _currentUser = null;
     }
 
     _isLoading = false;
+    log("[UserProvider] Finished fetching user. isLoading: $_isLoading");
     notifyListeners();
   }
 }

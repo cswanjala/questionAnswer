@@ -25,8 +25,11 @@ class AccountScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
 
+    // Fetch user data only if it's not already loaded
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await userProvider.fetchCurrentUser();
+      if (!userProvider.isLoading && userProvider.currentUser == null) {
+        await userProvider.fetchCurrentUser();
+      }
     });
 
     return Scaffold(
@@ -34,37 +37,36 @@ class AccountScreen extends StatelessWidget {
         title: Text('Account'),
         backgroundColor: Colors.blue,
       ),
-      body: userProvider.isLoading
-          ? Center(child: CircularProgressIndicator())
-          : userProvider.currentUser == null
-              ? Center(child: Text("No user data available"))
-              : Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 20),
-                      _buildProfileSection(userProvider),
-                      Divider(thickness: 1),
-                      _buildAccountOptions(context),
-                      Spacer(),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: () => _logout(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 12),
-                          ),
-                          child: Text(
-                            'Logout',
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (userProvider.isLoading)
+              Center(child: CircularProgressIndicator()),
+            SizedBox(height: 20),
+            _buildProfileSection(userProvider),
+            Divider(thickness: 1),
+            _buildMembershipInfo(userProvider),
+            Divider(thickness: 1),
+            _buildAccountOptions(context),
+            Spacer(),
+            Center(
+              child: ElevatedButton(
+                onPressed: () => _logout(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
+                child: Text(
+                  'Logout',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -101,6 +103,23 @@ class AccountScreen extends StatelessWidget {
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMembershipInfo(UserProvider userProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Membership Information',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Status: No subscriptions',
+          style: TextStyle(fontSize: 14, color: Colors.black87),
         ),
       ],
     );
