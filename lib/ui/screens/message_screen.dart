@@ -5,17 +5,25 @@ import 'package:question_nswer/core/features/users/controllers/users_provider.da
 import 'chat_screen.dart';
 
 class MessageScreen extends StatelessWidget {
-  final user = UserProvider().currentUser;
   @override
   Widget build(BuildContext context) {
     final messageProvider = Provider.of<MessageProvider>(context);
     final userProvider = Provider.of<UserProvider>(context);
+
+    // Fetch user data only if it's not already loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!userProvider.isLoading && userProvider.currentUser == null) {
+        await userProvider.fetchCurrentUser();
+      }
+    });
 
     if (userProvider.currentUser != null &&
         !messageProvider.isLoading &&
         messageProvider.userMessages.isEmpty) {
       messageProvider.fetchUserMessages(userProvider);
     }
+
+    final user = userProvider.currentUser;
 
     // Filter messages to show only the latest per sender
     final Map<String, Map<String, dynamic>> latestMessages = {};
@@ -101,8 +109,7 @@ class MessageScreen extends StatelessWidget {
                                       expertImage: message[
                                               'recipient_profile_picture'] ??
                                           'assets/default_profile.png',
-                                      expertCategory:
-                                          'Category Placeholder', // Adjust accordingly
+                                      expertCategory: 'Category Placeholder',
                                       authToken:
                                           Future.value(userProvider.authToken!),
                                     ),
