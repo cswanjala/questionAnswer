@@ -17,16 +17,16 @@ class UserProvider with ChangeNotifier {
     log("[UserProvider] Fetching current user...");
 
     try {
-      // Step 1: Get auth token and username from storage
+      // Step 1: Get auth token and user ID from storage
       log("[UserProvider] Retrieving user data from storage...");
       final userData = await _apiService.getUserData();
       log("[UserProvider] User data retrieved: $userData");
 
-      final username = userData['username'];
+      final userId = userData['user_id']; // assuming 'user_id' is stored
       final token = userData['auth_token'];
 
-      if (token == null || username == null) {
-        log("[UserProvider] No auth token or username found.");
+      if (token == null || userId == null) {
+        log("[UserProvider] No auth token or user_id found.");
         _currentUser = null;
         _isLoading = false;
         notifyListeners();
@@ -42,11 +42,13 @@ class UserProvider with ChangeNotifier {
         List<dynamic> users = response.data;
         log("[UserProvider] Users received: ${users.length} users found.");
 
-        // Step 3: Find the user with the matching username
+        // Step 3: Find the user with the matching user ID
         final user = users.firstWhere(
-          (user) => user['username'] == username,
+          (user) =>
+              user['id'].toString() ==
+              userId.toString(), // match by 'id' instead of 'username'
           orElse: () {
-            log("[UserProvider] No matching user found for username: $username");
+            log("[UserProvider] No matching user found for userId: $userId");
             return null;
           },
         );
