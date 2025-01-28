@@ -11,6 +11,9 @@ class UserProvider with ChangeNotifier {
   Map<String, dynamic>? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
 
+  String? _authToken;
+  String? get authToken => _authToken;
+
   Future<void> fetchCurrentUser() async {
     _isLoading = true;
     notifyListeners();
@@ -24,6 +27,7 @@ class UserProvider with ChangeNotifier {
 
       final userId = userData['user_id']; // assuming 'user_id' is stored
       final token = userData['auth_token'];
+      _authToken = token;
 
       if (token == null || userId == null) {
         log("[UserProvider] No auth token or user_id found.");
