@@ -1,10 +1,10 @@
-import 'dart:developer';
-
-import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'chat_screen.dart'; // Import ChatScreen
+import 'package:intl/intl.dart';
+import 'chat_screen.dart';
 
 class MessageScreen extends StatefulWidget {
   @override
@@ -22,6 +22,7 @@ class _MessageScreenState extends State<MessageScreen> {
   void initState() {
     super.initState();
     _initializeMessages();
+    _startPolling();
   }
 
   Future<void> _initializeMessages() async {
@@ -34,6 +35,17 @@ class _MessageScreenState extends State<MessageScreen> {
     } else {
       log('Error: Unable to fetch auth token or username.');
     }
+  }
+
+  void _startPolling() {
+    Future.delayed(Duration(seconds: 1), () async {
+      final token = await secureStorage.read(key: 'auth_token');
+      final username = await secureStorage.read(key: 'username');
+      if (token != null && username != null) {
+        await _fetchMessages(token, username);
+      }
+      _startPolling();
+    });
   }
 
   Future<void> _fetchMessages(String token, String username) async {
@@ -65,15 +77,32 @@ class _MessageScreenState extends State<MessageScreen> {
     for (var message in messages) {
       final sender = message['recipient_username'];
       final receiver = message['sender_username'];
-      log("---test---- sender "+sender);
-      log("---test---- sender "+receiver);
 
       if (receiver == username) {
         lastMessages[sender] = message;
       }
+      if (sender == username) {
+        lastMessages[receiver] = message;
+      }
     }
 
     return lastMessages;
+  }
+
+  String _formatTimestamp(String timestamp) {
+    final dateTime = DateTime.parse(timestamp);
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) {
+      return '${difference.inSeconds}s ago';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else {
+      return DateFormat('MMM d, y').format(dateTime);
+    }
   }
 
   @override
@@ -90,30 +119,59 @@ class _MessageScreenState extends State<MessageScreen> {
           final key = _lastMessages.keys.elementAt(index);
           final message = _lastMessages[key];
 
-          return ListTile(
-            leading: CircleAvatar(
-              child: Text(key[0].toUpperCase()),
-            ),
-            title: Text(key),
-            subtitle: Text(message['message']),
-            onTap: () {
-              log(message.toString());
-              log("The current username(senderUsername) is "+message['sender_username']);
-              log("The receiver is "+message['recipient_username']);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(
-                    senderUsername: message['sender_username'],
-                    recipientUsername: message['recipient_username'],
-                    expertName: key,
-                    expertImage: null, // Adjust as needed
-                    expertCategory: 'category', // Adjust as needed
-                    authToken: secureStorage.read(key: 'auth_token'),
+          return Card(
+            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: ListTile(
+              leading: Stack(
+                children: [
+                  CircleAvatar(
+                    child: Text(key[0].toUpperCase()),
                   ),
-                ),
-              );
-            },
+                  if (message['is_new'] == true)
+                    Positioned(
+                      right: 0,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              title: Text(
+                key,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(message['message']),
+                  SizedBox(height: 4),
+                  Text(
+                    _formatTimestamp(message['timestamp']),
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      senderUsername: message['sender_username'],
+                      recipientUsername: message['recipient_username'],
+                      expertName: key,
+                      expertImage: null, // Adjust as needed
+                      expertCategory: 'category', // Adjust as needed
+                      authToken: secureStorage.read(key: 'auth_token'),
+                    ),
+                  ),
+                );
+              },
+            ),
           );
         },
       ),
