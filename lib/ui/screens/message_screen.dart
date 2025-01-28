@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:developer';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
@@ -160,6 +163,20 @@ class _MessageScreenState extends State<MessageScreen> {
             margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             child: ListTile(
               leading: Stack(
+        title: Text('Messages'),
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        itemCount: _lastMessages.length,
+        itemBuilder: (context, index) {
+          final key = _lastMessages.keys.elementAt(index);
+          final message = _lastMessages[key];
+
+          return Card(
+            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: ListTile(
+              leading: Stack(
                 children: [
                   CircleAvatar(
                     child: Text(key[0].toUpperCase()),
@@ -208,7 +225,55 @@ class _MessageScreenState extends State<MessageScreen> {
                   ),
                 );
               },
+                    child: Text(key[0].toUpperCase()),
+                  ),
+                  if (message['is_new'] == true)
+                    Positioned(
+                      right: 0,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              title: Text(
+                key,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(message['message']),
+                  SizedBox(height: 4),
+                  Text(
+                    _formatTimestamp(message['timestamp']),
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      senderUsername: message['sender_username'],
+                      recipientUsername: message['recipient_username'],
+                      expertName: key,
+                      expertImage: null, // Adjust as needed
+                      expertCategory: 'category', // Adjust as needed
+                      authToken: secureStorage.read(key: 'auth_token'),
+                    ),
+                  ),
+                );
+              },
             ),
+          );
+        },
           );
         },
       ),
