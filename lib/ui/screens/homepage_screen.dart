@@ -7,6 +7,7 @@ import 'package:question_nswer/ui/screens/ask_now_screen.dart';
 import 'package:question_nswer/ui/screens/chat_screen.dart';
 import 'package:question_nswer/ui/screens/experts_screen.dart';
 import 'package:question_nswer/ui/screens/message_screen.dart';
+import 'package:question_nswer/ui/screens/payments_screen.dart';
 import 'account_screen.dart';
 import 'package:intl/intl.dart';
 
@@ -22,7 +23,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
 
   final List<Widget> _pages = [
     const HomeScreen(),
-    MessageScreen(),
+    PaymentScreen(),
     const AskNowScreen(),
     const ExpertsListScreen(),
     AccountScreen(),
