@@ -18,7 +18,7 @@ class MessageProvider with ChangeNotifier {
     log("[MessageProvider] Fetching user messages...");
 
     try {
-      // Step 1: Ensure current user data is available
+      // Step 1: Ensure current user data is available dummy comment
       if (userProvider.currentUser == null) {
         log("[MessageProvider] No current user found. Cannot fetch messages.");
         _isLoading = false;
