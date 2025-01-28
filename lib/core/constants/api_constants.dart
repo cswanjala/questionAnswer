@@ -1,11 +1,13 @@
 class ApiConstants {
-  static const String baseUrl = "http://192.168.1.127:8000/api";
-  static const String loginEndpoint = "http://192.168.1.127:8000/api/login/";
-  static const String registerEndpoint = "http://192.168.1.127:8000/api/users/";
-  static const String expertsEndpoint = "http://192.168.1.127:8000/api/experts/";
-  static const String questionsEndpoint = "http://192.168.1.127:8000/api/questions/";
-  static const String categoriesEndpoint = "http://192.168.1.127:8000/api/categories/";
-  static const String answersEndpoint = "http://192.168.1.127:8000/api/answers/";
+  static const String baseUrl = "http://10.5.54.169:8000/api";
+  static const String loginEndpoint = "http://10.5.54.169:8000/api/login/";
+  static const String registerEndpoint = "http://10.5.54.169:8000/api/users/";
+  static const String expertsEndpoint = "http://10.5.54.169:8000/api/experts/";
+  static const String questionsEndpoint =
+      "http://10.5.54.169:8000/api/questions/";
+  static const String categoriesEndpoint =
+      "http://10.5.54.169:8000/api/categories/";
+  static const String answersEndpoint = "http://10.5.54.169:8000/api/answers/";
 
   static const String authTokenKey = 'auth_token';
   // static const Color primaryColor = Colors.blue;
