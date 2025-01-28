@@ -4,6 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:question_nswer/core/features/users/controllers/user_messages_provider.dart';
+import 'package:question_nswer/core/features/users/controllers/users_provider.dart';
 import 'chat_screen.dart';
 
 class MessageScreen extends StatefulWidget {
