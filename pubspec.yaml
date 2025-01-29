@@ -43,6 +43,7 @@ dependencies:
   intl: ^0.20.1
   image_picker: ^1.1.2
   web_socket_channel: ^3.0.1
+  flutter_stripe: ^11.4.0
   
 
 dev_dependencies:

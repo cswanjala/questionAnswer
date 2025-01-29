@@ -58,7 +58,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadPreviousMessages(String roomName, String token) async {
-    final url = Uri.parse('http://192.168.1.127:8000/api/get_chat_messages/$roomName/');
+    final url =
+        Uri.parse('http://10.5.54.169:8000/api/get_chat_messages/$roomName/');
     try {
       final response = await http.get(
         url,
@@ -94,7 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _initializeWebSocket(String roomName, String token) {
     _channel = WebSocketChannel.connect(
-      Uri.parse('ws://192.168.1.127:8000/ws/chat/$roomName/?token=$token'),
+      Uri.parse('ws://10.5.54.169:8000/ws/chat/$roomName/?token=$token'),
     );
 
     // Listen for incoming messages

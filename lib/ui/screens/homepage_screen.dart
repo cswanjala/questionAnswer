@@ -23,7 +23,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
 
   final List<Widget> _pages = [
     const HomeScreen(),
-    MessageScreen(),
+    PaymentScreen(),
     const AskNowScreen(),
     const ExpertsListScreen(),
     AccountScreen(),

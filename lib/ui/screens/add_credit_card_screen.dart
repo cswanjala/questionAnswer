@@ -1,5 +1,9 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AddCreditCardScreen extends StatefulWidget {
   const AddCreditCardScreen({Key? key}) : super(key: key);
@@ -16,17 +20,38 @@ class _AddCreditCardScreenState extends State<AddCreditCardScreen> {
   final TextEditingController _cardholderNameController = TextEditingController();
 
   String? _cardType = "Visa"; // Default to Visa
-  
+
   // Function to handle form submission
-  void _submitCardDetails() {
+  void _submitCardDetails() async {
+    log("submit hit");
     if (_formKey.currentState?.validate() ?? false) {
-      // Perform submission logic, e.g., save credit card details to secure storage or database
-      // Show success message and navigate back or show confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Credit Card Added Successfully!')),
+      final cardDetails = {
+        'card_number': _cardNumberController.text.replaceAll(' ', ''),
+        'expiry_date': _expiryDateController.text,
+        'cvv': _cvvController.text,
+        'cardholder_name': _cardholderNameController.text,
+        'card_type': _cardType,
+      };
+
+      log("submit end");
+
+      final response = await http.post(
+        Uri.parse('http://192.168.1.127:8000/api/add_card/'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(cardDetails),
       );
 
-      Navigator.pop(context); // Go back to the Account screen
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Credit Card Added Successfully!')),
+        );
+        Navigator.pop(context); // Go back to the Account screen
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add credit card'+response.statusCode.toString())),
+        );
+      }
     }
   }
 
@@ -181,7 +206,7 @@ class CardNumberInputFormatter extends TextInputFormatter {
     // Format card number with spaces for better user experience
     String formatted = newValue.text.replaceAll(' ', '').replaceAllMapped(
       RegExp(r'(\d{4})(?=\d)'),
-      (match) => '${match.group(1)} ',
+          (match) => '${match.group(1)} ',
     );
     return newValue.copyWith(text: formatted);
   }

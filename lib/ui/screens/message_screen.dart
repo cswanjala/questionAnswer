@@ -4,7 +4,11 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:question_nswer/core/features/users/controllers/user_messages_provider.dart';
+import 'package:question_nswer/core/features/users/controllers/users_provider.dart';
 import 'chat_screen.dart';
+
 
 class MessageScreen extends StatefulWidget {
   @override
@@ -107,6 +111,40 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final messageProvider = Provider.of<MessageProvider>(context);
+    final userProvider = Provider.of<UserProvider>(context);
+
+    // Fetch user data only if it's not already loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!userProvider.isLoading && userProvider.currentUser == null) {
+        await userProvider.fetchCurrentUser();
+      }
+    });
+
+    if (userProvider.currentUser != null &&
+        !messageProvider.isLoading &&
+        messageProvider.userMessages.isEmpty) {
+      messageProvider.fetchUserMessages(userProvider);
+    }
+
+    final user = userProvider.currentUser;
+
+    // Filter messages to show only the latest per sender
+    final Map<String, Map<String, dynamic>> latestMessages = {};
+    for (var message in messageProvider.userMessages.reversed) {
+      final sender = message['sender_username'];
+      final recipient = message['recipient_username'];
+      final key = '$sender-$recipient'; // Unique key for sender-recipient pair
+
+      if (!latestMessages.containsKey(key)) {
+        latestMessages[key] =
+            message; // Store only the latest message per sender-recipient pair
+      }
+    }
+
+    final List<Map<String, dynamic>> filteredMessages =
+        latestMessages.values.toList();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Messages'),
