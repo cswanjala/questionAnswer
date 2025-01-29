@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
 import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
 import 'dart:io';
+import 'package:http/http.dart' as http;
 
 import 'package:image_picker/image_picker.dart';
 
@@ -27,9 +31,9 @@ class _AskNowScreenState extends State<AskNowScreen> {
     super.initState();
     _loadCategories();
   }
+
   Future<void> _loadCategories() async {
-    final categoriesProvider =
-    Provider.of<CategoriesProvider>(context, listen: false);
+    final categoriesProvider = Provider.of<CategoriesProvider>(context, listen: false);
     await categoriesProvider.fetchCategories();
   }
 
@@ -58,36 +62,79 @@ class _AskNowScreenState extends State<AskNowScreen> {
       return;
     }
 
-    final questionsProvider =
-    Provider.of<QuestionsProvider>(context, listen: false);
-    final success = await questionsProvider.addQuestion(
-      questionContent,
-      _selectedCategoryId!,
-      image: _selectedImage, // Pass the selected image
-    );
+    // Call payment function first
+    final success = await _processPayment();
 
     if (success) {
-      Fluttertoast.showToast(
-        msg: "Question submitted successfully!",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
+      // If payment is successful, proceed with the question submission
+      final questionsProvider = Provider.of<QuestionsProvider>(context, listen: false);
+      final success = await questionsProvider.addQuestion(
+        questionContent,
+        _selectedCategoryId!,
+        image: _selectedImage,
       );
-      _questionController.clear();
-      setState(() {
-        _selectedCategory = null;
-        _selectedCategoryId = null;
-        _selectedImage = null; // Clear the selected image
-      });
+
+      if (success) {
+        Fluttertoast.showToast(
+          msg: "Question submitted successfully!",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+        _questionController.clear();
+        setState(() {
+          _selectedCategory = null;
+          _selectedCategoryId = null;
+          _selectedImage = null;
+        });
+      } else {
+        Fluttertoast.showToast(
+          msg: "Failed to submit question.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
     } else {
       Fluttertoast.showToast(
-        msg: "Failed to submit question.",
+        msg: "Payment failed. Please try again.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
+    }
+  }
+
+  Future<bool> _processPayment() async {
+    try {
+      // Call your payment logic here (using Stripe or any other payment method)
+      await Stripe.instance.presentPaymentSheet();
+
+      // If payment is successful, you should also send payment data to your backend here
+      final paymentDetails = {
+        'payment_status': 'success',
+        // Add more payment details here if needed, such as the payment method, transaction ID, etc.
+      };
+
+      final response = await http.post(
+        Uri.parse('http://192.168.1.127:8000/api/payments/store-payment/'),
+        body: json.encode(paymentDetails),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true; // Payment successful
+      } else {
+        return false; // Payment failed
+      }
+    } catch (e) {
+      print("Payment Error: $e");
+      return false; // Payment failed
     }
   }
 
@@ -124,8 +171,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
                   setState(() {
                     _selectedCategory = value;
                     _selectedCategoryId = categoriesProvider.categories
-                        .firstWhere(
-                            (category) => category['name'] == value)['id'];
+                        .firstWhere((category) => category['name'] == value)['id'];
                   });
                 },
               )
@@ -170,8 +216,6 @@ class _AskNowScreenState extends State<AskNowScreen> {
                 ],
               ),
             ),
-
-            const SizedBox(height: 16),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -209,11 +253,11 @@ class _AskNowScreenState extends State<AskNowScreen> {
                 ),
               ),
             ),
-
           ],
         ),
       ),
     );
   }
 }
+
 
