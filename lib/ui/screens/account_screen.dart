@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:question_nswer/ui/screens/add_credit_card_screen.dart';
+import 'package:question_nswer/ui/screens/payments_screen.dart';
 import 'package:question_nswer/ui/screens/splash_screen.dart';
 
 class AccountScreen extends StatelessWidget {
@@ -133,7 +134,7 @@ class AccountScreen extends StatelessWidget {
           // Navigate to Add Credit Card Screen
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddCreditCardScreen()),
+            MaterialPageRoute(builder: (context) => PaymentScreen()),
           );
         },
       ),

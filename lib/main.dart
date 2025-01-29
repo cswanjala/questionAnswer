@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'package:question_nswer/core/features/authentication/controllers/auth_provider.dart';
 import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
 import 'package:question_nswer/core/features/experts/controllers/experts_provider.dart';
 import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
+import 'package:question_nswer/keys.dart';
 import 'package:question_nswer/ui/screens/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  Stripe.publishableKey = PublishableKey;
+  await Stripe.instance.applySettings();
   runApp(MyApp());
 }
 
