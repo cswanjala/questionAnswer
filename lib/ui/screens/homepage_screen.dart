@@ -89,18 +89,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  @override
-  // void initState() {
-  //   super.initState();
 
-  //   // Defer state update to after the first frame is rendered
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     final questionsProvider =
-  //         Provider.of<QuestionsProvider>(context, listen: false);
-  //     questionsProvider
-  //         .fetchQuestions(); // Fetch questions after the build process
-  //   });
-  // }
+
+
+  @override
   void initState() {
     super.initState();
 

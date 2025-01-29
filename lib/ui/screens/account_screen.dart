@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:provider/provider.dart';
-import 'package:question_nswer/core/features/users/controllers/users_provider.dart';
 import 'package:question_nswer/ui/screens/add_credit_card_screen.dart';
+import 'package:question_nswer/ui/screens/payments_screen.dart';
 import 'package:question_nswer/ui/screens/splash_screen.dart';
 
 class AccountScreen extends StatelessWidget {
@@ -23,31 +22,16 @@ class AccountScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-
-    // Fetch user data only if it's not already loaded
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!userProvider.isLoading && userProvider.currentUser == null) {
-        await userProvider.fetchCurrentUser();
-      }
-    });
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Account'),
-        backgroundColor: Colors.blue,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (userProvider.isLoading)
-              Center(child: CircularProgressIndicator()),
             SizedBox(height: 20),
-            _buildProfileSection(userProvider),
+            _buildProfileSection(),
             Divider(thickness: 1),
-            _buildMembershipInfo(userProvider),
+            _buildMembershipInfo(),
             Divider(thickness: 1),
             _buildAccountOptions(context),
             Spacer(),
@@ -70,36 +54,29 @@ class AccountScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileSection(UserProvider userProvider) {
-    final user = userProvider.currentUser;
-
+  Widget _buildProfileSection() {
     return Row(
       children: [
         CircleAvatar(
           radius: 40,
           backgroundColor: Colors.blue[100],
-          backgroundImage: user?["profile_picture"] != null
-              ? NetworkImage(user!["profile_picture"])
-              : null,
-          child: user?["profile_picture"] == null
-              ? Icon(
-                  Icons.person,
-                  size: 50,
-                  color: Colors.blue,
-                )
-              : null,
+          child: Icon(
+            Icons.person,
+            size: 50,
+            color: Colors.blue,
+          ),
         ),
         SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              user?["username"] ?? 'Unknown User',
+              'John Doe',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 4),
             Text(
-              user?["email"] ?? 'No email available',
+              'johndoe@example.com',
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
@@ -108,7 +85,7 @@ class AccountScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMembershipInfo(UserProvider userProvider) {
+  Widget _buildMembershipInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -118,52 +95,58 @@ class AccountScreen extends StatelessWidget {
         ),
         SizedBox(height: 8),
         Text(
-          'Status: No subscriptions',
+          'Status: Premium Member',
           style: TextStyle(fontSize: 14, color: Colors.black87),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'Expiry: 12/31/2025',
+          style: TextStyle(fontSize: 14, color: Colors.black54),
         ),
       ],
     );
   }
 
   Widget _buildAccountOptions(BuildContext context) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(Icons.settings, color: Colors.blue),
-          title: Text('Settings', style: TextStyle(fontSize: 16)),
-          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          onTap: () {
-            // Navigate to settings screen (to be implemented)
-          },
-        ),
-        ListTile(
-          leading: Icon(Icons.lock, color: Colors.blue),
-          title: Text('Change Password', style: TextStyle(fontSize: 16)),
-          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          onTap: () {
-            // Navigate to change password screen (to be implemented)
-          },
-        ),
-        ListTile(
-          leading: Icon(Icons.credit_card, color: Colors.blue),
-          title: Text('Add Credit Card', style: TextStyle(fontSize: 16)),
-          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AddCreditCardScreen()),
-            );
-          },
-        ),
-        ListTile(
-          leading: Icon(Icons.help, color: Colors.blue),
-          title: Text('Help & Support', style: TextStyle(fontSize: 16)),
-          trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          onTap: () {
-            // Navigate to help & support screen (to be implemented)
-          },
-        ),
-      ],
-    );
-  }
+  return Column(
+    children: [
+      ListTile(
+        leading: Icon(Icons.settings, color: Colors.blue),
+        title: Text('Settings', style: TextStyle(fontSize: 16)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: () {
+          // Navigate to settings screen (to be implemented)
+        },
+      ),
+      ListTile(
+        leading: Icon(Icons.lock, color: Colors.blue),
+        title: Text('Change Password', style: TextStyle(fontSize: 16)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: () {
+          // Navigate to change password screen (to be implemented)
+        },
+      ),
+      ListTile(
+        leading: Icon(Icons.credit_card, color: Colors.blue),
+        title: Text('Add Credit Card', style: TextStyle(fontSize: 16)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: () {
+          // Navigate to Add Credit Card Screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => PaymentScreen()),
+          );
+        },
+      ),
+      ListTile(
+        leading: Icon(Icons.help, color: Colors.blue),
+        title: Text('Help & Support', style: TextStyle(fontSize: 16)),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        onTap: () {
+          // Navigate to help & support screen (to be implemented)
+        },
+      ),
+    ],
+  );
+}
 }
