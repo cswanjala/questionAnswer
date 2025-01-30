@@ -52,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: 'just',
+                        text: 'expert',
                         style: TextStyle(
                           color: Colors.blue,
                           fontWeight: FontWeight.bold,
@@ -60,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       TextSpan(
-                        text: 'Answer',
+                        text: 'ask&more',
                         style: TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
