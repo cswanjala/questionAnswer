@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
@@ -62,7 +64,7 @@ class ExpertsListScreen extends StatelessWidget {
                           rating: expert['average_rating']?.toDouble() ?? 0.0,
                           categories: expert['categories'],
                           profilePicture: expert['user']['profile_picture'],
-                          senderUsername: currentUser['username'] ?? 'Unknown', // Use username from currentUser
+                          senderUsername: currentUser['username'] ?? 'Unknown',
                           recipientUsername: expert['user']['username'],
                         );
                       },
@@ -106,9 +108,9 @@ class ExpertsListScreen extends StatelessWidget {
                       : null,
                   child: profilePicture == null || profilePicture.isEmpty
                       ? Text(
-                          title.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                        )
+                    title.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  )
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -132,10 +134,28 @@ class ExpertsListScreen extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.favorite, color: Colors.red),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(ApiConstants.addedToFavouritesMessage)),
-                    );
+                  onPressed: () async {
+                    final user = await Provider.of<ExpertsProvider>(context, listen: false).currentUser;
+                    if (userId != null) {
+                      try {
+                        // Add the selected expert to favorites
+                        final response = await Provider.of<ExpertsProvider>(context, listen: false)
+                            .addFavoriteExpert(userId);
+
+                        // Handle the response as needed (e.g., show success message)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Expert added to favorites!')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to add expert to favorites: $e')),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('User not logged in')),
+                      );
+                    }
                   },
                 ),
               ],
@@ -167,8 +187,8 @@ class ExpertsListScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatScreen(
-                        senderUsername: senderUsername, // Pass senderUsername
-                        recipientUsername: recipientUsername, // Pass recipientUsername
+                        senderUsername: senderUsername,
+                        recipientUsername: recipientUsername,
                         expertName: expertName,
                         expertImage: profilePicture ?? "",
                         expertCategory: title,

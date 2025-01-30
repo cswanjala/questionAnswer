@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dart:developer'; // Import the log function
+import 'dart:developer';
 
 class ChatScreen extends StatefulWidget {
   final String senderUsername;
   final String recipientUsername;
   final String expertName;
-  final String? expertImage; // Make expertImage optional
+  final String? expertImage;
   final String expertCategory;
   final Future<String?> authToken;
 
@@ -18,8 +18,8 @@ class ChatScreen extends StatefulWidget {
     required this.senderUsername,
     required this.recipientUsername,
     required this.expertName,
-    this.expertImage, // Allow null values
-    this.expertCategory = 'category', // Set default value
+    this.expertImage,
+    this.expertCategory = 'category',
     required this.authToken,
   });
 
@@ -44,13 +44,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final token = await widget.authToken;
     if (token != null) {
       final participants = [widget.senderUsername, widget.recipientUsername];
-      participants.sort(); // Sort usernames alphabetically
+      participants.sort();
       final roomName = participants.join('_');
 
-      // Fetch previous messages
       await _loadPreviousMessages(roomName, token);
-
-      // Initialize WebSocket connection
       _initializeWebSocket(roomName, token);
     } else {
       log('Error: Unable to fetch auth token.');
@@ -70,10 +67,11 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages = messages
               .map((msg) => {
-                    'message': msg['message'],
-                    'sender_username': msg['sender'],
-                    'recipient_username': msg['receiver'],
-                  })
+            'message': msg['message'],
+            'sender_username': msg['sender_username'],
+            'recipient_username': msg['recipient_username'],
+            'question_content': msg['question']['content'],
+          })
               .toList();
           _isLoading = false;
         });
@@ -97,9 +95,8 @@ class _ChatScreenState extends State<ChatScreen> {
       Uri.parse('ws://192.168.1.127:8000/ws/chat/$roomName/?token=$token'),
     );
 
-    // Listen for incoming messages
     _channel.stream.listen(
-      (message) {
+          (message) {
         final decodedMessage = json.decode(message);
         log('Received message: $decodedMessage');
         setState(() {
@@ -107,6 +104,7 @@ class _ChatScreenState extends State<ChatScreen> {
             'message': decodedMessage['message'],
             'sender_username': decodedMessage['sender'],
             'recipient_username': decodedMessage['receiver'],
+            'question_content': decodedMessage['question']['content'],
           });
         });
         _scrollToBottom();
@@ -167,8 +165,13 @@ class _ChatScreenState extends State<ChatScreen> {
               CircleAvatar(
                 backgroundImage: NetworkImage(widget.expertImage!),
                 radius: 20,
+              )
+            else
+              CircleAvatar(
+                backgroundImage: AssetImage('assets/images/default_avatar.png'),
+                radius: 20,
               ),
-            if (widget.expertImage != null) SizedBox(width: 10),
+            SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -195,43 +198,59 @@ class _ChatScreenState extends State<ChatScreen> {
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
-                    ? Center(child: Text('No messages yet.'))
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          log('Message sender: ${message['sender_username']}');
-                          log('Current user: ${widget.senderUsername}');
-                          final isUserMessage =
-                              message['sender_username'] == widget.senderUsername;
-                          log('Is user message: $isUserMessage');
-                          return Align(
-                            alignment: isUserMessage
-                                ? Alignment.centerRight
-                                : Alignment.centerLeft,
-                            child: Container(
-                              padding: EdgeInsets.all(12),
-                              margin: EdgeInsets.symmetric(vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isUserMessage
-                                    ? Colors.blue
-                                    : Colors.grey[200],
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                message['message'],
-                                style: TextStyle(
-                                  color: isUserMessage
-                                      ? Colors.white
-                                      : Colors.black,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                ? Center(child: Text('No messages yet.'))
+                : ListView.builder(
+              controller: _scrollController,
+              padding: EdgeInsets.all(16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                final isUserMessage =
+                    message['sender_username'] == widget.senderUsername;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (index == 0 ||
+                        _messages[index - 1]['question_content'] !=
+                            message['question_content'])
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Text(
+                          message['question_content'],
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
                       ),
+                    Align(
+                      alignment: isUserMessage
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        padding: EdgeInsets.all(12),
+                        margin: EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isUserMessage
+                              ? Colors.blue
+                              : Colors.grey[200],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          message['message'],
+                          style: TextStyle(
+                            color: isUserMessage
+                                ? Colors.white
+                                : Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),

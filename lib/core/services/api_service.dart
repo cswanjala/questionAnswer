@@ -28,8 +28,11 @@ class ApiService {
       log("inside get response but from ApiService");
       final token = await _getToken();
       _dio.options.headers["Authorization"] = "Bearer $token";
+      _dio.options.headers["Content-Type"] = "application/json";
       log("already done");
     }
+
+    log(_dio.post(endpoint,data: data).toString());
     return await _dio.post(endpoint, data: data);
   }
 
@@ -68,4 +71,6 @@ class ApiService {
       "username": username
     };
   }
+
+
 }

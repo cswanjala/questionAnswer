@@ -63,7 +63,8 @@ class _AskNowScreenState extends State<AskNowScreen> {
     }
 
     // Call payment function first
-    final success = await _processPayment();
+    // final success = await _processPayment();
+    final success = true ;
 
     if (success) {
       // If payment is successful, proceed with the question submission

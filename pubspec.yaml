@@ -75,6 +75,7 @@ flutter:
     - assets/logo.webp
     - assets/logo.svg
     - assets/experts.jpeg
+    - assets/images/default_avatar.png
     
 
   # An image asset can refer to one or more resolution-specific "variants", see

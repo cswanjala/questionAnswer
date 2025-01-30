@@ -39,7 +39,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "just",
+              "expert ",
               style: TextStyle(
                 color: Colors.blue,
                 fontSize: 20,
@@ -47,7 +47,7 @@ class _HomepageScreenState extends State<HomepageScreen> {
               ),
             ),
             Text(
-              "answer",
+              "ask&more",
               style: TextStyle(color: Colors.black, fontSize: 20),
             ),
           ],
@@ -89,9 +89,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
-
-
   @override
   void initState() {
     super.initState();
@@ -152,9 +149,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       elevation: 2,
                       margin: const EdgeInsets.only(bottom: 10),
                       child: ListTile(
-                        leading: const CircleAvatar(
-                          backgroundImage:
-                              NetworkImage('https://via.placeholder.com/150'),
+                        leading: CircleAvatar(
+                          backgroundImage: question['assigned_expert'] != null &&
+                              question['assigned_expert']['user'] != null &&
+                              question['assigned_expert']['user']['profile_picture'] != null
+                              ? NetworkImage(question['assigned_expert']['user']['profile_picture'])
+                              : const AssetImage('assets/images/default_avatar.png'),
                         ),
                         title: Text(
                           assignedExpert != null

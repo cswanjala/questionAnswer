@@ -12,7 +12,7 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  int amount = 2000;
+  int amount = 5;
 
   Map<String, dynamic>? intentPaymentData;
 
@@ -115,7 +115,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
           style: ThemeMode.light,
-          merchantDisplayName: 'Cosiwa',
+          merchantDisplayName: 'JustAnswer',
         ),
       );
 
@@ -140,7 +140,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               'USD',
             );
           },
-          child: Text('Pay Now $amount USD'),
+          child: Text('Pay Now ${amount/5} USD'),
         ),
       ),
     );

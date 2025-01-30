@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:question_nswer/core/services/api_service.dart';
+import 'package:http/http.dart' as http;
 
 class ExpertsProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
+  final _storage = FlutterSecureStorage();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -143,6 +147,34 @@ class ExpertsProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<List<dynamic>> getFavoriteExperts(int userId) async {
+    final response = await _apiService.get('/get_favorite_experts');
+    if (response.statusCode == 200) {
+      return response.data;
+    } else {
+      throw Exception('Failed to load favorite experts');
+    }
+  }
+
+  // Method to add an expert to the user's favorite list
+  Future<void> addFavoriteExpert(int expertId) async {
+    final authToken = await _storage.read(key: 'auth_token');
+    final url = 'http://192.168.1.127:8000/api/addfavexpert'; // Replace with your API URL
+
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: json.encode({'expert_id': expertId}),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception('Failed to add favorite expert: ${response.body}');
     }
   }
 }
