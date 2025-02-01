@@ -22,7 +22,7 @@ class _MessageScreenState extends State<MessageScreen> {
   void initState() {
     super.initState();
     _initializeMessages();
-    _startPolling();
+    // _startPolling();
   }
 
   Future<void> _initializeMessages() async {
