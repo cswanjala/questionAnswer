@@ -12,7 +12,7 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  int amount = 5;
+  int amount = 2800;
 
   Map<String, dynamic>? intentPaymentData;
 
@@ -140,7 +140,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               'USD',
             );
           },
-          child: Text('Pay Now ${amount/5} USD'),
+          child: Text('Pay Now ${amount/100} USD'),
         ),
       ),
     );
