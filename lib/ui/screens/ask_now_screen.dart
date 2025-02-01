@@ -5,11 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
-import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
-import 'package:question_nswer/keys.dart';
+import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
+import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
 
 class AskNowScreen extends StatefulWidget {
   const AskNowScreen({Key? key}) : super(key: key);
@@ -32,7 +31,8 @@ class _AskNowScreenState extends State<AskNowScreen> {
   }
 
   Future<void> _loadCategories() async {
-    final categoriesProvider = Provider.of<CategoriesProvider>(context, listen: false);
+    final categoriesProvider =
+        Provider.of<CategoriesProvider>(context, listen: false);
     await categoriesProvider.fetchCategories();
   }
 
@@ -65,149 +65,145 @@ class _AskNowScreenState extends State<AskNowScreen> {
       _isSubmitting = true;
     });
 
-    log("before payment");
+    try {
+      log("Before processing payment");
+      // Step 1: Process the payment
+      final paymentSuccess = await _processPayment();
+      log("Payment success: $paymentSuccess");
 
-    // First, try to process the payment
-    final paymentSuccess = await _processPayment();
-    log("Payment Success: $paymentSuccess");
+      if (!paymentSuccess) {
+        // If payment fails, don't proceed with submitting the question
+        Fluttertoast.showToast(
+          msg: "Payment failed. Please try again.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return;
+      }
 
-    if (!paymentSuccess) {
-      // If payment fails, don't proceed with submitting the question
+      log("Before submitting question");
+
+      // Step 2: If payment is successful, submit the question
+      final questionsProvider =
+          Provider.of<QuestionsProvider>(context, listen: false);
+      final success = await questionsProvider.addQuestion(
+        questionContent,
+        _selectedCategoryId!,
+        image: _selectedImage,
+      );
+
+      log("After submitting question. Success: $success");
+
+      if (success) {
+        Fluttertoast.showToast(
+          msg: "Question submitted successfully!",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+        _questionController.clear();
+        setState(() {
+          _selectedCategory = null;
+          _selectedCategoryId = null;
+          _selectedImage = null;
+        });
+      } else {
+        Fluttertoast.showToast(
+          msg: "Failed to submit question.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
+    } catch (e) {
+      log("Error during question submission: $e");
       Fluttertoast.showToast(
-        msg: "Payment failed. Please try again.",
+        msg: "An error occurred. Please try again.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
-      setState(() {
-        _isSubmitting = false;
-      });
-      return;
+    } finally {
+      // Ensure the loading state is reset, even if an error occurs
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
-
-    // If payment is successful, proceed to submit the question
-    final questionsProvider = Provider.of<QuestionsProvider>(context, listen: false);
-    final success = await questionsProvider.addQuestion(
-      questionContent,
-      _selectedCategoryId!,
-      image: _selectedImage,
-    );
-
-    if (success) {
-      Fluttertoast.showToast(
-        msg: "Question submitted successfully!",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-      );
-      _questionController.clear();
-      setState(() {
-        _selectedCategory = null;
-        _selectedCategoryId = null;
-        _selectedImage = null;
-      });
-    } else {
-      Fluttertoast.showToast(
-        msg: "Failed to submit question.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-    }
-
-    setState(() {
-      _isSubmitting = false;
-    });
   }
 
   Future<bool> _processPayment() async {
     try {
-      // Initialize the payment sheet
-      await paymentSheetInitialization(5, 'USD'); // You can customize the amount here
+      log("inside process payment");
+      // Step 1: Fetch the client secret from your backend
+      final clientSecret = await _fetchClientSecret();
 
-      // Show the payment sheet
-      await showPaymentSheet();
+      log("inside process payment and client secret has been fetched");
 
-      // If the payment was successful, return true
-      return true;
-    } catch (e) {
-      // Handle any errors that occur during the payment process
-      log("Payment Error: $e");
-      return false;
-    }
-  }
+      if (clientSecret == null) {
+        throw Exception("Failed to fetch client secret.");
+      }
 
-  // Function to initialize and show the payment sheet
-  Future<void> paymentSheetInitialization(int amountToBeCharged, String currency) async {
-    try {
-      final intentPaymentData = await makeIntentForPayment(amountToBeCharged, currency);
-
+      log("before initializing initpayment sheet..");
+      // Step 2: Initialize the payment sheet
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
-          allowsDelayedPaymentMethods: true,
-          paymentIntentClientSecret: intentPaymentData['client_secret'],
-          style: ThemeMode.light,
+          paymentIntentClientSecret: clientSecret,
           merchantDisplayName: 'Cosiwa',
+          allowsDelayedPaymentMethods: true,
         ),
       );
-    } catch (errorMsg, s) {
-      log(s.toString());
-      log(errorMsg.toString());
+
+      log("after initializing payment sheet");
+
+      // Step 3: Present the payment sheet
+      await Stripe.instance.presentPaymentSheet();
+      log("payment sheet presented successfully");
+
+      // Step 4: Confirm the payment
+      // await Stripe.instance.confirmPaymentSheetPayment();
+      // log("payment confirmed successfully");
+
+      return true; // Payment successful
+    } on StripeException catch (e) {
+      log("Stripe Error: ${e.error.localizedMessage}");
+      return false; // Payment failed
+    } catch (e) {
+      log("Payment Error: $e");
+      return false; // Payment failed
     }
   }
 
-  // Function to create payment intent using your backend API
-  Future<Map<String, dynamic>> makeIntentForPayment(int amountToBeCharged, String currency) async {
+  Future<String?> _fetchClientSecret() async {
     try {
-      // Convert the amount to cents (if it's in dollars, for example, $20 becomes 2000 cents)
-      int amountInCents = amountToBeCharged * 100;
-
-      // Prepare the form data for the request
-      Map<String, String> paymentInfo = {
-        'amount': amountInCents.toString(),
-        'currency': currency,
-        'automatic_payment_methods[enabled]': 'true',
-      };
-
-      var responseFromStripeApi = await http.post(
-        Uri.parse('https://api.stripe.com/v1/payment_intents'),
-        body: paymentInfo,
+      // Call your Django backend to create a PaymentIntent
+      final response = await http.post(
+        Uri.parse('http://192.168.1.127:8000/api/payments/create-intent/'),
         headers: {
-          "Authorization": "Bearer $SecretKey",  // Use your Stripe Secret Key
-          "Content-Type": "application/x-www-form-urlencoded",
+          'Content-Type': 'application/json',
         },
       );
 
-      return jsonDecode(responseFromStripeApi.body);
-    } catch (errorMsg, s) {
-      log(s?.toString() ?? 'Unknown Error');
-      log(errorMsg?.toString() ?? 'Unknown Error');
-      rethrow;
-    }
-  }
+      log(response.body + " and status code " + response.statusCode.toString());
 
-  // Function to show the payment sheet
-  Future<void> showPaymentSheet() async {
-    try {
-      await Stripe.instance.presentPaymentSheet().then((value) {
-        // Payment is successful, return to the main flow
-        print('Payment Successful');
-      });
-    } on StripeException catch (e) {
-      // Handle Stripe errors
-      print('Stripe error: ${e.error.localizedMessage}');
-      showDialog(
-        context: context,
-        builder: (c) => AlertDialog(
-          title: Text('Error'),
-          content: Text("Cancelled"),
-        ),
-      );
-    } catch (errorMsg) {
-      print('Unknown error: $errorMsg');
+      if (response.statusCode == 200) {
+        log("Client secret fetched successfully. at 200 status code");
+        final data = jsonDecode(response.body);
+        log("data decoded successfully");
+        log(data.toString());
+        return data['clientSecret'];
+      } else {
+        throw Exception("Failed to fetch client secret.");
+      }
+    } catch (e) {
+      log("Error fetching client secret: $e");
+      return null;
     }
   }
 
@@ -244,7 +240,8 @@ class _AskNowScreenState extends State<AskNowScreen> {
                   setState(() {
                     _selectedCategory = value;
                     _selectedCategoryId = categoriesProvider.categories
-                        .firstWhere((category) => category['name'] == value)['id'];
+                        .firstWhere(
+                            (category) => category['name'] == value)['id'];
                   });
                 },
               )
@@ -298,7 +295,8 @@ class _AskNowScreenState extends State<AskNowScreen> {
                   decoration: BoxDecoration(
                     gradient: _isSubmitting
                         ? LinearGradient(colors: [Colors.grey, Colors.grey])
-                        : LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
+                        : LinearGradient(
+                            colors: [Colors.blue, Colors.lightBlueAccent]),
                     borderRadius: BorderRadius.circular(25),
                     boxShadow: [
                       if (!_isSubmitting)
@@ -313,7 +311,8 @@ class _AskNowScreenState extends State<AskNowScreen> {
                   alignment: Alignment.center,
                   child: _isSubmitting
                       ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         )
                       : const Text(
                           "Submit Question",
