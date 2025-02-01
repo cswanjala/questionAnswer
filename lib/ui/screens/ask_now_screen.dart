@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +24,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
   final TextEditingController _questionController = TextEditingController();
   File? _selectedImage; // To store the selected image
   bool _isSubmitting = false;
+  String _secretKey = "";
 
   @override
   void initState() {
@@ -97,6 +99,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
       log("After submitting question. Success: $success");
 
       if (success) {
+         await _storePaymentDetails();
         Fluttertoast.showToast(
           msg: "Question submitted successfully!",
           toastLength: Toast.LENGTH_LONG,
@@ -143,6 +146,8 @@ class _AskNowScreenState extends State<AskNowScreen> {
       log("inside process payment");
       // Step 1: Fetch the client secret from your backend
       final clientSecret = await _fetchClientSecret();
+      log(clientSecret.toString());
+      _secretKey = clientSecret.toString();
 
       log("inside process payment and client secret has been fetched");
 
@@ -180,7 +185,52 @@ class _AskNowScreenState extends State<AskNowScreen> {
     }
   }
 
-  Future<String?> _fetchClientSecret() async {
+  Future<void> _storePaymentDetails() async {
+    log("inside store payment details");
+  final storage = FlutterSecureStorage();
+  
+  try {
+    // Fetch the payment method details from Stripe
+    final paymentMethod = await Stripe.instance.retrievePaymentIntent(_secretKey);
+
+    // Retrieve the user ID from secure storage
+    String? userId = await storage.read(key: 'user_id');
+
+    if (userId == null) {
+      log("User ID not found in secure storage");
+      return; // or handle the error as needed
+    }
+
+    // Prepare the payment details to send to the backend
+    final paymentDetails = {
+      'user_id': userId, // Now using user_id from secure storage
+      'stripe_payment_method_id': paymentMethod.id,
+      'card_brand': 'visa',
+      'card_last4': '456'
+    };
+    log("amount is $paymentMethod.amount");
+
+    // Send the payment details to the backend
+    final response = await http.post(
+      Uri.parse('http://192.168.1.127:8000/api/store-payment-details/'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(paymentDetails),
+    );
+
+    if (response.statusCode == 201) {
+      log("Payment details stored successfully.");
+    } else {
+      log("Failed to store payment details: ${response.body}");
+    }
+  } catch (e) {
+    log("Error storing payment details: $e");
+  }
+}
+
+
+  Future<String> _fetchClientSecret() async {
     try {
       // Call your Django backend to create a PaymentIntent
       final response = await http.post(
@@ -203,7 +253,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
       }
     } catch (e) {
       log("Error fetching client secret: $e");
-      return null;
+      return "null";
     }
   }
 
