@@ -57,6 +57,7 @@ class ApiService {
     await _storage.write(key: "auth_token", value: token);
     await _storage.write(key: "user_id", value: userId);
     await _storage.write(key: "username", value: username);
+    // await _storage.write(key: "email", value: username);
   }
 
   // Retrieve user data including username

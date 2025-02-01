@@ -1,15 +1,15 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:provider/provider.dart';
-import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
-import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
-
+import 'dart:convert';
+import 'dart:developer';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
+import 'package:question_nswer/core/features/categories/controllers/categories_provider.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:http/http.dart' as http;
+import 'package:question_nswer/keys.dart';
 
 class AskNowScreen extends StatefulWidget {
   const AskNowScreen({Key? key}) : super(key: key);
@@ -18,13 +18,12 @@ class AskNowScreen extends StatefulWidget {
   _AskNowScreenState createState() => _AskNowScreenState();
 }
 
-
-
 class _AskNowScreenState extends State<AskNowScreen> {
   String? _selectedCategory;
   int? _selectedCategoryId;
   final TextEditingController _questionController = TextEditingController();
   File? _selectedImage; // To store the selected image
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -62,43 +61,18 @@ class _AskNowScreenState extends State<AskNowScreen> {
       return;
     }
 
-    // Call payment function first
-    // final success = await _processPayment();
-    final success = true ;
+    setState(() {
+      _isSubmitting = true;
+    });
 
-    if (success) {
-      // If payment is successful, proceed with the question submission
-      final questionsProvider = Provider.of<QuestionsProvider>(context, listen: false);
-      final success = await questionsProvider.addQuestion(
-        questionContent,
-        _selectedCategoryId!,
-        image: _selectedImage,
-      );
+    log("before payment");
 
-      if (success) {
-        Fluttertoast.showToast(
-          msg: "Question submitted successfully!",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
-        _questionController.clear();
-        setState(() {
-          _selectedCategory = null;
-          _selectedCategoryId = null;
-          _selectedImage = null;
-        });
-      } else {
-        Fluttertoast.showToast(
-          msg: "Failed to submit question.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-      }
-    } else {
+    // First, try to process the payment
+    final paymentSuccess = await _processPayment();
+    log("Payment Success: $paymentSuccess");
+
+    if (!paymentSuccess) {
+      // If payment fails, don't proceed with submitting the question
       Fluttertoast.showToast(
         msg: "Payment failed. Please try again.",
         toastLength: Toast.LENGTH_SHORT,
@@ -106,36 +80,134 @@ class _AskNowScreenState extends State<AskNowScreen> {
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
+      setState(() {
+        _isSubmitting = false;
+      });
+      return;
     }
+
+    // If payment is successful, proceed to submit the question
+    final questionsProvider = Provider.of<QuestionsProvider>(context, listen: false);
+    final success = await questionsProvider.addQuestion(
+      questionContent,
+      _selectedCategoryId!,
+      image: _selectedImage,
+    );
+
+    if (success) {
+      Fluttertoast.showToast(
+        msg: "Question submitted successfully!",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
+      _questionController.clear();
+      setState(() {
+        _selectedCategory = null;
+        _selectedCategoryId = null;
+        _selectedImage = null;
+      });
+    } else {
+      Fluttertoast.showToast(
+        msg: "Failed to submit question.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
+
+    setState(() {
+      _isSubmitting = false;
+    });
   }
 
   Future<bool> _processPayment() async {
     try {
-      // Call your payment logic here (using Stripe or any other payment method)
-      await Stripe.instance.presentPaymentSheet();
+      // Initialize the payment sheet
+      await paymentSheetInitialization(5, 'USD'); // You can customize the amount here
 
-      // If payment is successful, you should also send payment data to your backend here
-      final paymentDetails = {
-        'payment_status': 'success',
-        // Add more payment details here if needed, such as the payment method, transaction ID, etc.
+      // Show the payment sheet
+      await showPaymentSheet();
+
+      // If the payment was successful, return true
+      return true;
+    } catch (e) {
+      // Handle any errors that occur during the payment process
+      log("Payment Error: $e");
+      return false;
+    }
+  }
+
+  // Function to initialize and show the payment sheet
+  Future<void> paymentSheetInitialization(int amountToBeCharged, String currency) async {
+    try {
+      final intentPaymentData = await makeIntentForPayment(amountToBeCharged, currency);
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          allowsDelayedPaymentMethods: true,
+          paymentIntentClientSecret: intentPaymentData['client_secret'],
+          style: ThemeMode.light,
+          merchantDisplayName: 'Cosiwa',
+        ),
+      );
+    } catch (errorMsg, s) {
+      log(s.toString());
+      log(errorMsg.toString());
+    }
+  }
+
+  // Function to create payment intent using your backend API
+  Future<Map<String, dynamic>> makeIntentForPayment(int amountToBeCharged, String currency) async {
+    try {
+      // Convert the amount to cents (if it's in dollars, for example, $20 becomes 2000 cents)
+      int amountInCents = amountToBeCharged * 100;
+
+      // Prepare the form data for the request
+      Map<String, String> paymentInfo = {
+        'amount': amountInCents.toString(),
+        'currency': currency,
+        'automatic_payment_methods[enabled]': 'true',
       };
 
-      final response = await http.post(
-        Uri.parse('http://192.168.1.127:8000/api/payments/store-payment/'),
-        body: json.encode(paymentDetails),
+      var responseFromStripeApi = await http.post(
+        Uri.parse('https://api.stripe.com/v1/payment_intents'),
+        body: paymentInfo,
         headers: {
-          'Content-Type': 'application/json',
+          "Authorization": "Bearer $SecretKey",  // Use your Stripe Secret Key
+          "Content-Type": "application/x-www-form-urlencoded",
         },
       );
 
-      if (response.statusCode == 200) {
-        return true; // Payment successful
-      } else {
-        return false; // Payment failed
-      }
-    } catch (e) {
-      print("Payment Error: $e");
-      return false; // Payment failed
+      return jsonDecode(responseFromStripeApi.body);
+    } catch (errorMsg, s) {
+      log(s?.toString() ?? 'Unknown Error');
+      log(errorMsg?.toString() ?? 'Unknown Error');
+      rethrow;
+    }
+  }
+
+  // Function to show the payment sheet
+  Future<void> showPaymentSheet() async {
+    try {
+      await Stripe.instance.presentPaymentSheet().then((value) {
+        // Payment is successful, return to the main flow
+        print('Payment Successful');
+      });
+    } on StripeException catch (e) {
+      // Handle Stripe errors
+      print('Stripe error: ${e.error.localizedMessage}');
+      showDialog(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: Text('Error'),
+          content: Text("Cancelled"),
+        ),
+      );
+    } catch (errorMsg) {
+      print('Unknown error: $errorMsg');
     }
   }
 
@@ -198,7 +270,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
                       ),
                       filled: true,
                       fillColor: Colors.grey[100],
-                      contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 48), // Adjust padding
+                      contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
                     ),
                     textAlignVertical: TextAlignVertical.top,
                   ),
@@ -221,15 +293,15 @@ class _AskNowScreenState extends State<AskNowScreen> {
             SizedBox(
               width: double.infinity,
               child: GestureDetector(
-                onTap: isSubmitting ? null : _submitQuestion,
+                onTap: _isSubmitting ? null : _submitQuestion,
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: isSubmitting
+                    gradient: _isSubmitting
                         ? LinearGradient(colors: [Colors.grey, Colors.grey])
                         : LinearGradient(colors: [Colors.blue, Colors.lightBlueAccent]),
                     borderRadius: BorderRadius.circular(25),
                     boxShadow: [
-                      if (!isSubmitting)
+                      if (!_isSubmitting)
                         BoxShadow(
                           color: Colors.blue.withOpacity(0.5),
                           offset: Offset(0, 4),
@@ -239,18 +311,18 @@ class _AskNowScreenState extends State<AskNowScreen> {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   alignment: Alignment.center,
-                  child: isSubmitting
+                  child: _isSubmitting
                       ? const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  )
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
                       : const Text(
-                    "Submit Question",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                          "Submit Question",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -260,5 +332,3 @@ class _AskNowScreenState extends State<AskNowScreen> {
     );
   }
 }
-
-

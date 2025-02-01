@@ -7,6 +7,8 @@ class ApiConstants {
   static const String categoriesEndpoint = "http://192.168.1.127:8000/api/categories/";
   static const String answersEndpoint = "http://192.168.1.127:8000/api/answers/";
 
+  static const String favoriteExpertsEndpoint = "/get_favorite_experts/";
+
   static const String authTokenKey = 'auth_token';
   // static const Color primaryColor = Colors.blue;
   static const String expertsListTitle = "Live Experts in 150+ categories";
