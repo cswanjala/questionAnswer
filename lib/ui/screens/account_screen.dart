@@ -1,10 +1,11 @@
+// account_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
-import 'package:question_nswer/core/services/api_service.dart';
-import 'package:question_nswer/ui/screens/add_credit_card_screen.dart';
+import 'package:question_nswer/core/features/users/user_provider.dart';
 import 'package:question_nswer/ui/screens/payments_screen.dart';
 import 'package:question_nswer/ui/screens/splash_screen.dart';
+
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({Key? key}) : super(key: key);
@@ -15,23 +16,12 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   final FlutterSecureStorage secureStorage = FlutterSecureStorage();
-  Map<String, String?> _userData = {};
-  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
-  }
-
-  Future<void> _fetchUserData() async {
-    final apiService = Provider.of<ApiService>(context, listen: false);
-    final userData = await apiService.getUserData();
-
-    setState(() {
-      _userData = userData;
-      _isLoading = false;
-    });
+    // Fetch user data when the screen is initialized
+    Provider.of<UserProvider>(context, listen: false).fetchUserData();
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -47,6 +37,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -54,7 +46,7 @@ class _AccountScreenState extends State<AccountScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-            _buildProfileSection(),
+            _buildProfileSection(userProvider),
             const Divider(thickness: 1),
             _buildMembershipInfo(),
             const Divider(thickness: 1),
@@ -79,16 +71,28 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _buildProfileSection() {
+  Widget _buildProfileSection(UserProvider userProvider) {
     return Row(
       children: [
         CircleAvatar(
           radius: 40,
           backgroundColor: Colors.blue[100],
-          child: const Icon(
-            Icons.person,
-            size: 50,
-            color: Colors.blue,
+          child: userProvider.userData['profile_picture'] != null
+              ? ClipOval(
+            child: Image.network(
+              userProvider.userData['profile_picture'],
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            ),
+          )
+              : ClipOval(
+            child: Image.asset(
+              'assets/images/default_avatar.png',
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -96,12 +100,12 @@ class _AccountScreenState extends State<AccountScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _isLoading ? 'Loading...' : _userData['username'] ?? 'Guest',
+              userProvider.isLoading ? 'Loading...' : userProvider.userData['username'] ?? 'Guest',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              _isLoading ? 'Loading...' : _userData['email'] ?? 'No email',
+              userProvider.isLoading ? 'Loading...' : userProvider.userData['email'] ?? 'No email',
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
@@ -120,12 +124,12 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Status: ${_isLoading ? 'Loading...' : 'Premium Member'}',
+          'Status: Premium Member',
           style: const TextStyle(fontSize: 14, color: Colors.black87),
         ),
         const SizedBox(height: 4),
         Text(
-          'Expiry: ${_isLoading ? 'Loading...' : '12/31/2025'}',
+          'Expiry: 12/31/2025',
           style: const TextStyle(fontSize: 14, color: Colors.black54),
         ),
       ],

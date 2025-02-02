@@ -6,6 +6,7 @@ import 'package:question_nswer/core/features/categories/controllers/categories_p
 import 'package:question_nswer/core/features/experts/controllers/experts_provider.dart';
 import 'package:question_nswer/core/features/experts/controllers/favourite_expert_provider.dart';
 import 'package:question_nswer/core/features/questions/controllers/questions_provider.dart';
+import 'package:question_nswer/core/features/users/user_provider.dart';
 import 'package:question_nswer/keys.dart';
 import 'package:question_nswer/ui/screens/splash_screen.dart';
 
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(
           create: (context) => AuthProvider(),
         ),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (context) => QuestionsProvider()),
         ChangeNotifierProvider(create: (context) => ExpertsProvider()),
         ChangeNotifierProvider(create: (context) => CategoriesProvider()),

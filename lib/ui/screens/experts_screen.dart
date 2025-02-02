@@ -104,14 +104,8 @@ class ExpertsListScreen extends StatelessWidget {
                   backgroundColor: Colors.grey[300],
                   radius: 30,
                   backgroundImage: profilePicture != null && profilePicture.isNotEmpty
-                      ? NetworkImage(profilePicture)
-                      : null,
-                  child: profilePicture == null || profilePicture.isEmpty
-                      ? Text(
-                    title.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  )
-                      : null,
+                    ? NetworkImage(profilePicture)
+                    : AssetImage('assets/images/default_avatar.png') as ImageProvider,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

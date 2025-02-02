@@ -25,10 +25,10 @@ class _HomepageScreenState extends State<HomepageScreen> {
 
   final List<Widget> _pages = [
     const HomeScreen(),
-     MessageScreen(),
+    MessageScreen(),
     const AskNowScreen(),
     const ExpertsListScreen(),
-     AccountScreen(),
+    AccountScreen(),
   ];
 
   @override
@@ -92,20 +92,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final String baseUrl = 'http://192.168.1.127:8000';
-  final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
 
   @override
   void initState() {
     super.initState();
     _initializeData();
-    _scrollController.addListener(_loadMoreData);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   void _initializeData() {
@@ -121,28 +112,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeUser(favoriteExpertsProvider);
   }
 
-  Future<void> _initializeUser(FavoriteExpertsProvider favoriteExpertsProvider) async {
+  Future<void> _initializeUser(
+      FavoriteExpertsProvider favoriteExpertsProvider) async {
     final secureStorage = FlutterSecureStorage();
     final userId = await secureStorage.read(key: 'user_id');
     if (userId != null) {
       favoriteExpertsProvider.fetchFavoriteExperts(userId);
-    }
-  }
-
-  void _loadMoreData() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
-      setState(() {
-        _isLoadingMore = true;
-      });
-
-      final questionsProvider =
-          Provider.of<QuestionsProvider>(context, listen: false);
-      questionsProvider.fetchMoreQuestions().then((_) {
-        setState(() {
-          _isLoadingMore = false;
-        });
-      });
     }
   }
 
@@ -159,12 +134,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final questionsProvider = Provider.of<QuestionsProvider>(context);
-    final favoriteExpertsProvider = Provider.of<FavoriteExpertsProvider>(context);
+    final favoriteExpertsProvider =
+        Provider.of<FavoriteExpertsProvider>(context);
 
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: SingleChildScrollView(
-        controller: _scrollController,
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,11 +147,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildActiveQuestionsSection(questionsProvider),
             const SizedBox(height: 20),
             _buildFavoriteExpertsSection(favoriteExpertsProvider),
-            if (_isLoadingMore)
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(child: CircularProgressIndicator()),
-              ),
           ],
         ),
       ),
@@ -192,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 10),
-        if (questionsProvider.isLoading && !_isLoadingMore)
+        if (questionsProvider.isLoading)
           const Center(child: CircularProgressIndicator())
         else if (questionsProvider.questions.isEmpty)
           const Text("No active questions")
@@ -219,8 +189,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundImage: assignedExpert != null &&
                             assignedExpert['user'] != null &&
                             assignedExpert['user']['profile_picture'] != null
-                        ? NetworkImage('$baseUrl${assignedExpert['user']['profile_picture']}')
-                        : const AssetImage('assets/images/default_avatar.png') as ImageProvider,
+                        ? NetworkImage(
+                            '$baseUrl${assignedExpert['user']['profile_picture']}')
+                        : const AssetImage('assets/images/default_avatar.png')
+                            as ImageProvider,
                   ),
                   title: Text(
                     assignedExpert != null
@@ -235,7 +207,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         assignedExpert != null
                             ? "${assignedExpert['title']} | $formattedDate"
                             : "Waiting for an expert to be assigned | $formattedDate",
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                       const SizedBox(height: 5),
                       Text(
@@ -259,7 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFavoriteExpertsSection(FavoriteExpertsProvider favoriteExpertsProvider) {
+  Widget _buildFavoriteExpertsSection(
+      FavoriteExpertsProvider favoriteExpertsProvider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -284,21 +258,27 @@ class _HomeScreenState extends State<HomeScreen> {
         else
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: favoriteExpertsProvider.favoriteExperts.take(2).map((expert) {
-              final profilePicture = expert['expert']['user']['profile_picture'];
+            children:
+                favoriteExpertsProvider.favoriteExperts.take(2).map((expert) {
+              final profilePicture =
+                  expert['expert']['user']['profile_picture'];
               return Expanded(
                 child: Card(
                   elevation: 2,
                   child: Container(
                     height: 180,
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 10),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          backgroundImage: profilePicture != null && profilePicture.isNotEmpty
+                          backgroundImage: profilePicture != null &&
+                                  profilePicture.isNotEmpty
                               ? NetworkImage('$baseUrl$profilePicture')
-                              : const AssetImage('assets/images/default_avatar.png') as ImageProvider,
+                              : const AssetImage(
+                                      'assets/images/default_avatar.png')
+                                  as ImageProvider,
                           radius: 30,
                         ),
                         const SizedBox(height: 10),
@@ -320,16 +300,25 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 5),
                         ElevatedButton.icon(
                           onPressed: () async {
-                            final authToken = Provider.of<ExpertsProvider>(context, listen: false).authToken;
+                            final authToken = Provider.of<ExpertsProvider>(
+                                    context,
+                                    listen: false)
+                                .authToken;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => ChatScreen(
-                                  expertName: expert['expert']['user']['username'],
-                                  expertImage: profilePicture != null ? '$baseUrl$profilePicture' : "",
-                                  expertCategory: expert['expert']['categories'] != null &&
+                                  expertName: expert['expert']['user']
+                                      ['username'],
+                                  expertImage: profilePicture != null
+                                      ? '$baseUrl$profilePicture'
+                                      : "",
+                                  expertCategory: expert['expert']
+                                                  ['categories'] !=
+                                              null &&
                                           expert['expert']['categories'] is List
-                                      ? expert['expert']['categories'].join(', ')
+                                      ? expert['expert']['categories']
+                                          .join(', ')
                                       : "No category",
                                   authToken: authToken,
                                   senderUsername: 'salama',
@@ -338,8 +327,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           },
-                          icon: const Icon(CupertinoIcons.chat_bubble_2_fill, size: 16),
-                          label: const Text("Ask", style: TextStyle(fontSize: 14)),
+                          icon: const Icon(CupertinoIcons.chat_bubble_2_fill,
+                              size: 16),
+                          label:
+                              const Text("Ask", style: TextStyle(fontSize: 14)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
                           ),

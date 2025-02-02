@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ChatScreen extends StatefulWidget {
   final String senderUsername;
@@ -32,6 +33,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _messages = [];
   bool _isLoading = true;
+  String? _currentUsername;
 
   @override
   void initState() {
@@ -39,7 +41,9 @@ class _ChatScreenState extends State<ChatScreen> {
     _initializeChat();
   }
 
-  void _initializeChat() async {
+  // Initialize chat: Fetch user, load messages, and connect WebSocket
+  Future<void> _initializeChat() async {
+    await _getCurrentUsername();
     final token = await widget.authToken;
     if (token == null) {
       log('Error: Unable to fetch auth token.');
@@ -51,40 +55,47 @@ class _ChatScreenState extends State<ChatScreen> {
     _initializeWebSocket(roomName, token);
   }
 
+  // Fetch current username from Secure Storage
+  Future<void> _getCurrentUsername() async {
+    final storage = FlutterSecureStorage();
+    final username = await storage.read(key: 'username');
+    setState(() {
+      _currentUsername = username;
+      _isLoading = false;
+    });
+  }
+
+  // Generate a unique room name
   String _generateRoomName(String user1, String user2) {
     final participants = [user1, user2]..sort();
     return participants.join('_');
   }
 
+  // Load previous chat messages from the backend
   Future<void> _loadPreviousMessages(String roomName, String token) async {
     final url = Uri.parse('http://192.168.1.127:8000/api/get_chat_messages/$roomName/');
     try {
-      final response = await http.get(
-        url,
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final response = await http.get(url, headers: {'Authorization': 'Bearer $token'});
 
       if (response.statusCode == 200) {
         final messages = json.decode(response.body) as List;
         setState(() {
           _messages = messages.map((msg) => {
             'message': msg['message'],
-            'sender_username': msg['sender'],
-            'recipient_username': msg['receiver'],
+            'sender_username': msg['sender'].trim(),
+            'recipient_username': msg['receiver'].trim(),
           }).toList();
-          _isLoading = false;
         });
         _scrollToBottom();
       } else {
         log('Failed to load previous messages: ${response.body}');
-        setState(() => _isLoading = false);
       }
     } catch (e) {
       log('Error fetching previous messages: $e');
-      setState(() => _isLoading = false);
     }
   }
 
+  // Initialize WebSocket connection
   void _initializeWebSocket(String roomName, String token) {
     _channel = WebSocketChannel.connect(
       Uri.parse('ws://192.168.1.127:8000/ws/chat/$roomName/?token=$token'),
@@ -92,12 +103,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _channel.stream.listen(
       (message) {
+        log("Received message: $message");
         final decodedMessage = json.decode(message);
         setState(() {
           _messages.add({
             'message': decodedMessage['message'],
-            'sender_username': decodedMessage['sender'],
-            'recipient_username': decodedMessage['receiver'],
+            'sender_username': decodedMessage['sender'].trim(),
+            'recipient_username': decodedMessage['receiver'].trim(),
           });
         });
         _scrollToBottom();
@@ -107,6 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // Send a message via WebSocket
   void _sendMessage(String content) {
     if (content.isEmpty) return;
 
@@ -119,6 +132,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
   }
 
+  // Scroll to the latest message
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -151,26 +165,16 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Row(
           children: [
             if (widget.expertImage != null)
-              CircleAvatar(
-                backgroundImage: NetworkImage(widget.expertImage!),
-                radius: 20,
-              ),
-            if (widget.expertImage != null) SizedBox(width: 10),
+              CircleAvatar(backgroundImage: NetworkImage(widget.expertImage!), radius: 20)
+            else
+              CircleAvatar(backgroundImage: AssetImage('assets/images/default_avatar.png'), radius: 20),
+            if (widget.expertImage != null || widget.expertName != null) SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.expertName,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                Text(
-                  widget.expertCategory,
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
+          Text(widget.expertName,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+          Text(widget.expertCategory, style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ],
@@ -189,7 +193,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         itemCount: _messages.length,
                         itemBuilder: (context, index) {
                           final message = _messages[index];
-                          final isUserMessage = message['sender_username'] == widget.senderUsername;
+                          final isUserMessage = message['sender_username'] == _currentUsername;
 
                           return Align(
                             alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
@@ -202,9 +206,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
                               child: Text(
                                 message['message'],
-                                style: TextStyle(
-                                  color: isUserMessage ? Colors.white : Colors.black,
-                                ),
+                                style: TextStyle(color: isUserMessage ? Colors.white : Colors.black),
                               ),
                             ),
                           );
@@ -215,12 +217,7 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  blurRadius: 10,
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 10)],
             ),
             child: Row(
               children: [

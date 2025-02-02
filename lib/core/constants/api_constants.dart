@@ -8,6 +8,8 @@ class ApiConstants {
   static const String answersEndpoint = "http://192.168.1.127:8000/api/answers/";
 
   static const String favoriteExpertsEndpoint = "/get_favorite_experts/";
+  static const String userProfileEndpoint = "/user/";
+  static const String membershipEndpoint = "/membership-plans/";
 
   static const String authTokenKey = 'auth_token';
   // static const Color primaryColor = Colors.blue;
