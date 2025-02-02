@@ -25,7 +25,6 @@ class _HomepageScreenState extends State<HomepageScreen> {
 
   final List<Widget> _pages = [
     const HomeScreen(),
-    MessageScreen(),
     const AskNowScreen(),
     const ExpertsListScreen(),
     AccountScreen(),
@@ -69,8 +68,6 @@ class _HomepageScreenState extends State<HomepageScreen> {
         items: const [
           BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.home), label: "Home"),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.chat_bubble), label: "Inbox"),
           BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.add), label: "Ask Now"),
           BottomNavigationBarItem(
@@ -180,49 +177,96 @@ class _HomeScreenState extends State<HomeScreen> {
               final formattedDate = createdAt != null
                   ? DateFormat('MMM d, yyyy h:mm a').format(createdAt)
                   : "Unknown time";
+              final isActive = question['is_active'] ?? false;
 
-              return Card(
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: assignedExpert != null &&
-                            assignedExpert['user'] != null &&
-                            assignedExpert['user']['profile_picture'] != null
-                        ? NetworkImage(
-                            '$baseUrl${assignedExpert['user']['profile_picture']}')
-                        : const AssetImage('assets/images/default_avatar.png')
-                            as ImageProvider,
-                  ),
-                  title: Text(
-                    assignedExpert != null
-                        ? assignedExpert['user']['username']
-                        : 'Unassigned',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        assignedExpert != null
-                            ? "${assignedExpert['title']} | $formattedDate"
-                            : "Waiting for an expert to be assigned | $formattedDate",
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.grey),
+              return GestureDetector(
+                onTap: () async {
+                  // Fetch the current logged-in user's username
+                  final secureStorage = FlutterSecureStorage();
+                  final senderUsername = await secureStorage.read(key: 'username');
+
+                  // Navigate to ChatScreen with the required parameters
+                  if (assignedExpert != null && senderUsername != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          senderUsername: senderUsername,
+                          recipientUsername: assignedExpert['user']['username'],
+                          expertName: assignedExpert['user']['username'],
+                          expertImage: assignedExpert['user']['profile_picture'] != null
+                              ? '$baseUrl${assignedExpert['user']['profile_picture']}'
+                              : null,
+                          expertCategory: assignedExpert['categories'] != null &&
+                                  assignedExpert['categories'] is List &&
+                                  assignedExpert['categories'].isNotEmpty
+                              ? assignedExpert['categories'].join(', ')
+                              : "No category",
+                          authToken: Provider.of<ExpertsProvider>(context, listen: false).authToken,
+                        ),
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        question['content'],
-                        style: const TextStyle(color: Colors.black),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        assignedExpert != null
-                            ? "Expert ${assignedExpert['user']['username']} is responding"
-                            : "Waiting for an expert to respond",
-                        style: const TextStyle(color: Colors.blue),
-                      ),
-                    ],
+                    );
+                  }
+                },
+                child: Card(
+                  elevation: 2,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: Stack(
+                      children: [
+                        CircleAvatar(
+                          backgroundImage: assignedExpert != null &&
+                                  assignedExpert['user'] != null &&
+                                  assignedExpert['user']['profile_picture'] != null
+                              ? NetworkImage(
+                                  '$baseUrl${assignedExpert['user']['profile_picture']}')
+                              : const AssetImage('assets/images/default_avatar.png')
+                                  as ImageProvider,
+                        ),
+                        if (isActive)
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    title: Text(
+                      assignedExpert != null
+                          ? assignedExpert['user']['username']
+                          : 'Unassigned',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          assignedExpert != null
+                              ? "${assignedExpert['title']} | $formattedDate"
+                              : "Waiting for an expert to be assigned | $formattedDate",
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          question['content'],
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          assignedExpert != null
+                              ? "Expert ${assignedExpert['user']['username']} is responding"
+                              : "Waiting for an expert to respond",
+                          style: const TextStyle(color: Colors.blue),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
