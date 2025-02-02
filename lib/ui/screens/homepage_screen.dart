@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -10,6 +12,7 @@ import 'package:question_nswer/ui/screens/chat_screen.dart';
 import 'package:question_nswer/ui/screens/experts_screen.dart';
 import 'package:question_nswer/ui/screens/message_screen.dart';
 import 'package:question_nswer/ui/screens/payments_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'account_screen.dart';
 import 'package:intl/intl.dart';
 
@@ -89,12 +92,27 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final String baseUrl = 'http://192.168.1.127:8000';
+  late bool isExpert;
 
   @override
   void initState() {
     super.initState();
     _initializeData();
+    _initializeIsExpert();
   }
+
+  Future<void> _initializeIsExpert() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isExpert = prefs.getBool('is_expert') ?? false;
+    });
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _initializeData();
+  // }
 
   void _initializeData() {
     final questionsProvider =
@@ -184,20 +202,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Fetch the current logged-in user's username
                   final secureStorage = FlutterSecureStorage();
                   final senderUsername = await secureStorage.read(key: 'username');
+                  final image = question['client']['profile_picture'];
+
+                  // Determine the recipient username based on isExpert
+                  final recipientUsername = isExpert
+                      ? question['client']['username']
+                      : assignedExpert?['user']['username'];
+
+                  log(recipientUsername);
+                  log("Sender username is "+senderUsername!);
 
                   // Navigate to ChatScreen with the required parameters
-                  if (assignedExpert != null && senderUsername != null) {
+                  if (recipientUsername != null && senderUsername != null) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChatScreen(
                           senderUsername: senderUsername,
-                          recipientUsername: assignedExpert['user']['username'],
-                          expertName: assignedExpert['user']['username'],
-                          expertImage: assignedExpert['user']['profile_picture'] != null
-                              ? '$baseUrl${assignedExpert['user']['profile_picture']}'
+                          recipientUsername: recipientUsername,
+                          expertName: recipientUsername,
+                          expertImage: image != null
+                              ? '$baseUrl$image'
                               : null,
-                          expertCategory: assignedExpert['categories'] != null &&
+                          expertCategory: assignedExpert?['categories'] != null &&
                                   assignedExpert['categories'] is List &&
                                   assignedExpert['categories'].isNotEmpty
                               ? assignedExpert['categories'].join(', ')
@@ -239,7 +266,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     title: Text(
-                      assignedExpert != null
+                      isExpert
+                        ? question['client']['username']
+                        : assignedExpert != null
                           ? assignedExpert['user']['username']
                           : 'Unassigned',
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -278,6 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFavoriteExpertsSection(
       FavoriteExpertsProvider favoriteExpertsProvider) {
+        
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

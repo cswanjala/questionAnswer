@@ -69,7 +69,7 @@ class AuthService {
         }
 
         // Save token, user_id, and username securely
-        await _apiService.saveToken(data['access'], data['id'].toString(), data['username']);
+        await _apiService.saveToken(data['access'], data['id'].toString(), data['username'],data['is_expert']);
         
         return true;
       } else {

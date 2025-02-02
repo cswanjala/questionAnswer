@@ -2,10 +2,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   final Dio _dio = Dio(BaseOptions(baseUrl: ApiConstants.baseUrl));
   final FlutterSecureStorage _storage = FlutterSecureStorage();
+  
+
 
   Future<String?> _getToken() async {
     return await _storage.read(key: "auth_token");
@@ -48,11 +51,14 @@ class ApiService {
   }
 
   // Save token and user details, including username
-  Future<void> saveToken(String token, String userId, String username) async {
+  Future<void> saveToken(String token, String userId, String username,bool isExpert) async {
     await _storage.write(key: "auth_token", value: token);
     await _storage.write(key: "user_id", value: userId);
     await _storage.write(key: "username", value: username);
     // await _storage.write(key: "email", value: username);
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool("is_expert", isExpert);
+    
   }
 
   // Retrieve user data including username
