@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:question_nswer/core/services/auth_service.dart';
+import 'dart:io';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -10,11 +11,11 @@ class AuthProvider with ChangeNotifier {
 
   get errorMessage => null;
 
-  Future<bool> register(String username, String email, String password, String confirmPassword) async {
+  Future<bool> register(String username, String email, String password, String confirmPassword, File? profileImage) async {
     _isLoading = true;
     notifyListeners();
 
-    final success = await _authService.register(username, email, password, confirmPassword);
+    final success = await _authService.register(username, email, password, confirmPassword, profileImage);
 
     _isLoading = false;
     notifyListeners();

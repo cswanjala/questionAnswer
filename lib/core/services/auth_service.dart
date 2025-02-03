@@ -1,12 +1,14 @@
 import 'dart:developer';
+import 'dart:io';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:dio/dio.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
 import 'api_service.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService();
 
-  Future<bool> register(String username, String email, String password, String confirmPassword) async {
+  Future<bool> register(String username, String email, String password, String confirmPassword, File? profileImage) async {
     if (username.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       Fluttertoast.showToast(msg: "All fields must be filled");
       return false;
@@ -18,9 +20,16 @@ class AuthService {
     }
 
     try {
+      final formData = FormData.fromMap({
+        'username': username,
+        'email': email,
+        'password': password,
+        if (profileImage != null && await profileImage.exists()) 'profile_picture': await MultipartFile.fromFile(profileImage.path),
+      });
+
       final response = await _apiService.post(
         ApiConstants.registerEndpoint,
-        {'username': username, 'email': email, 'password': password},
+        formData,
         requiresAuth: false,
       );
 

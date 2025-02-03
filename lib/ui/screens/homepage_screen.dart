@@ -15,6 +15,7 @@ import 'package:question_nswer/ui/screens/payments_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'account_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomepageScreen extends StatefulWidget {
   const HomepageScreen({super.key});
@@ -174,11 +175,11 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         const Text(
           "Active Questions",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         const SizedBox(height: 10),
         if (questionsProvider.isLoading)
-          const Center(child: CircularProgressIndicator())
+          _buildShimmerLoading()
         else if (questionsProvider.questions.isEmpty)
           const Text("No active questions")
         else
@@ -230,14 +231,18 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? assignedExpert['categories'].join(', ')
                               : "No category",
                           authToken: Provider.of<ExpertsProvider>(context, listen: false).authToken,
+                          questionId: question['id'],
                         ),
                       ),
                     );
                   }
                 },
                 child: Card(
-                  elevation: 2,
+                  elevation: 4,
                   margin: const EdgeInsets.only(bottom: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                   child: ListTile(
                     leading: Stack(
                       children: [
@@ -307,7 +312,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFavoriteExpertsSection(
       FavoriteExpertsProvider favoriteExpertsProvider) {
-        
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -316,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: const [
             Text(
               "Favorite Experts",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             Text(
               "All Experts",
@@ -326,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 10),
         if (favoriteExpertsProvider.isLoading)
-          const Center(child: CircularProgressIndicator())
+          _buildShimmerLoading()
         else if (favoriteExpertsProvider.favoriteExperts.isEmpty)
           const Text("No favorite experts found")
         else
@@ -338,7 +342,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   expert['expert']['user']['profile_picture'];
               return Expanded(
                 child: Card(
-                  elevation: 2,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                   child: Container(
                     height: 180,
                     padding: const EdgeInsets.symmetric(
@@ -397,6 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   authToken: authToken,
                                   senderUsername: 'salama',
                                   recipientUsername: 'makena',
+                                
                                 ),
                               ),
                             );
@@ -407,6 +415,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               const Text("Ask", style: TextStyle(fontSize: 14)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
                           ),
                         ),
                       ],
@@ -417,6 +428,51 @@ class _HomeScreenState extends State<HomeScreen> {
             }).toList(),
           ),
       ],
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Column(
+        children: List.generate(3, (index) {
+          return Card(
+            elevation: 4,
+            margin: const EdgeInsets.only(bottom: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.grey[300],
+              ),
+              title: Container(
+                width: double.infinity,
+                height: 10.0,
+                color: Colors.grey[300],
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 5),
+                  Container(
+                    width: double.infinity,
+                    height: 10.0,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 5),
+                  Container(
+                    width: 100.0,
+                    height: 10.0,
+                    color: Colors.grey[300],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 }

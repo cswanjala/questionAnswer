@@ -21,7 +21,7 @@ class UserService {
         return {
           'username': userData['username'],
           'email': userData['email'],
-          'imageUrl': userData['profile_picture'], // Assuming the API returns an image URL
+          'profile_picture': userData['profile_picture'], // Assuming the API returns an image URL
         };
       } else {
         throw Exception('Failed to load user profile');

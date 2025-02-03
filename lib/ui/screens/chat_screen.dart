@@ -4,6 +4,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:question_nswer/services/ratings_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String senderUsername;
@@ -12,6 +13,7 @@ class ChatScreen extends StatefulWidget {
   final String? expertImage;
   final String expertCategory;
   final Future<String?> authToken;
+  final int? questionId;
 
   const ChatScreen({
     super.key,
@@ -21,6 +23,7 @@ class ChatScreen extends StatefulWidget {
     this.expertImage,
     this.expertCategory = 'category',
     required this.authToken,
+    this.questionId,
   });
 
   @override
@@ -34,6 +37,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<Map<String, dynamic>> _messages = [];
   bool _isLoading = true;
   String? _currentUsername;
+  bool _isChatEnded = false;
 
   @override
   void initState() {
@@ -145,6 +149,90 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  // End chat session and show rating dialog
+  void _endChatSession() {
+    setState(() {
+      _isChatEnded = true;
+    });
+    _showRatingDialog();
+  }
+
+  // Show rating dialog
+  void _showRatingDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+      ),
+      builder: (context) {
+        double _rating = 0;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Rate the Expert',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Please rate your experience with ${widget.expertName}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < _rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _rating = index + 1.0;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () async {
+                      // Handle rating submission
+                      await RatingsService.submitRating(widget.recipientUsername, _rating, widget.questionId ?? 0);
+                      Navigator.pop(context);
+                      log('User rated: $_rating');
+                    },
+                    child: Text('Submit'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _channel.sink.close();
@@ -172,71 +260,91 @@ class _ChatScreenState extends State<ChatScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-          Text(widget.expertName,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
-          Text(widget.expertCategory, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(widget.expertName,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                Text(widget.expertCategory, style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ],
         ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'End Chat') {
+                _endChatSession();
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return {'End Chat'}.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
           Expanded(
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
-                : _messages.isEmpty
-                    ? Center(child: Text('No messages yet.'))
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          final isUserMessage = message['sender_username'] == _currentUsername;
+                : _isChatEnded
+                    ? Center(child: Text('Chat session has ended.'))
+                    : _messages.isEmpty
+                        ? Center(child: Text('No messages yet.'))
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: EdgeInsets.all(16),
+                            itemCount: _messages.length,
+                            itemBuilder: (context, index) {
+                              final message = _messages[index];
+                              final isUserMessage = message['sender_username'] == _currentUsername;
 
-                          return Align(
-                            alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              padding: EdgeInsets.all(12),
-                              margin: EdgeInsets.symmetric(vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isUserMessage ? Colors.blue : Colors.grey[200],
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                message['message'],
-                                style: TextStyle(color: isUserMessage ? Colors.white : Colors.black),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                              return Align(
+                                alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
+                                child: Container(
+                                  padding: EdgeInsets.all(12),
+                                  margin: EdgeInsets.symmetric(vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isUserMessage ? Colors.blue : Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    message['message'],
+                                    style: TextStyle(color: isUserMessage ? Colors.white : Colors.black),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
           ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 10)],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: "Type your message...",
-                      border: InputBorder.none,
+          if (!_isChatEnded)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 10)],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: InputDecoration(
+                        hintText: "Type your message...",
+                        border: InputBorder.none,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send, color: Colors.blue),
-                  onPressed: () => _sendMessage(_messageController.text.trim()),
-                ),
-              ],
+                  IconButton(
+                    icon: Icon(Icons.send, color: Colors.blue),
+                    onPressed: () => _sendMessage(_messageController.text.trim()),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

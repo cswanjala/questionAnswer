@@ -72,28 +72,31 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildProfileSection(UserProvider userProvider) {
+    String baseUrl = "http://192.168.1.127:8000"; // Replace with your actual API base URL
+    String? profilePicturePath = userProvider.userData['profile_picture'];
+    String fullProfilePictureUrl = profilePicturePath != null ? '$baseUrl$profilePicturePath' : '';
+
     return Row(
       children: [
         CircleAvatar(
           radius: 40,
           backgroundColor: Colors.blue[100],
-          child: userProvider.userData['profile_picture'] != null
+          backgroundImage: profilePicturePath != null
+              ? NetworkImage(fullProfilePictureUrl)
+              : AssetImage('assets/images/default_avatar.png') as ImageProvider,
+          onBackgroundImageError: (_, __) {
+            // Fallback in case image fails to load
+          },
+          child: profilePicturePath == null
               ? ClipOval(
-            child: Image.network(
-              userProvider.userData['profile_picture'],
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-            ),
-          )
-              : ClipOval(
             child: Image.asset(
               'assets/images/default_avatar.png',
               width: 80,
               height: 80,
               fit: BoxFit.cover,
             ),
-          ),
+          )
+              : null,
         ),
         const SizedBox(width: 16),
         Column(
@@ -113,6 +116,7 @@ class _AccountScreenState extends State<AccountScreen> {
       ],
     );
   }
+
 
   Widget _buildMembershipInfo() {
     return Column(

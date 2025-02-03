@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
 import 'package:question_nswer/core/features/experts/controllers/experts_provider.dart';
 import 'package:question_nswer/ui/screens/chat_screen.dart';
+import 'package:question_nswer/services/ratings_service.dart';
 
 class ExpertsListScreen extends StatelessWidget {
   const ExpertsListScreen({super.key});
@@ -55,17 +56,23 @@ class ExpertsListScreen extends StatelessWidget {
                         final expert = provider.experts[index];
                         final currentUser = provider.currentUser;
 
-                        return _buildExpertCard(
-                          context: context,
-                          expertName: expert['user']['username'],
-                          id: expert['id'],
-                          userId: expert['user']['id'],
-                          title: expert['title'] ?? ApiConstants.defaultTitle,
-                          rating: expert['average_rating']?.toDouble() ?? 0.0,
-                          categories: expert['categories'],
-                          profilePicture: expert['user']['profile_picture'],
-                          senderUsername: currentUser['username'] ?? 'Unknown',
-                          recipientUsername: expert['user']['username'],
+                        return FutureBuilder<double>(
+                          future: RatingsService.fetchAverageRating(expert['id']),
+                          builder: (context, snapshot) {
+                            final averageRating = snapshot.data ?? 0.0;
+                            return _buildExpertCard(
+                              context: context,
+                              expertName: expert['user']['username'],
+                              id: expert['id'],
+                              userId: expert['user']['id'],
+                              title: expert['title'] ?? ApiConstants.defaultTitle,
+                              rating: averageRating,
+                              categories: expert['categories'],
+                              profilePicture: expert['user']['profile_picture'],
+                              senderUsername: currentUser['username'] ?? 'Unknown',
+                              recipientUsername: expert['user']['username'],
+                            );
+                          },
                         );
                       },
                     );
