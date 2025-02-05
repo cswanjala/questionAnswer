@@ -19,23 +19,15 @@ class AskNowScreen extends StatefulWidget {
 }
 
 class _AskNowScreenState extends State<AskNowScreen> {
-  String? _selectedCategory;
-  int? _selectedCategoryId;
   final TextEditingController _questionController = TextEditingController();
   File? _selectedImage; // To store the selected image
   bool _isSubmitting = false;
   String _secretKey = "";
+  String _paymentMethod = 'stripe'; // Default payment method
 
   @override
   void initState() {
     super.initState();
-    _loadCategories();
-  }
-
-  Future<void> _loadCategories() async {
-    final categoriesProvider =
-        Provider.of<CategoriesProvider>(context, listen: false);
-    await categoriesProvider.fetchCategories();
   }
 
   Future<void> _pickImage() async {
@@ -52,9 +44,9 @@ class _AskNowScreenState extends State<AskNowScreen> {
   Future<void> _submitQuestion() async {
     final questionContent = _questionController.text.trim();
 
-    if (_selectedCategoryId == null || questionContent.isEmpty) {
+    if (questionContent.isEmpty) {
       Fluttertoast.showToast(
-        msg: "Please select a category and enter a question.",
+        msg: "Please enter a question.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
@@ -69,12 +61,17 @@ class _AskNowScreenState extends State<AskNowScreen> {
 
     try {
       log("Before processing payment");
-      // Step 1: Process the payment
-      final paymentSuccess = await _processPayment();
+      bool paymentSuccess = false;
+
+      if (_paymentMethod == 'stripe') {
+        paymentSuccess = await _processPayment();
+      } else if (_paymentMethod == 'infura') {
+        paymentSuccess = await _processInfuraPayment();
+      }
+
       log("Payment success: $paymentSuccess");
 
       if (!paymentSuccess) {
-        // If payment fails, don't proceed with submitting the question
         Fluttertoast.showToast(
           msg: "Payment failed. Please try again.",
           toastLength: Toast.LENGTH_SHORT,
@@ -87,19 +84,17 @@ class _AskNowScreenState extends State<AskNowScreen> {
 
       log("Before submitting question");
 
-      // Step 2: If payment is successful, submit the question
       final questionsProvider =
           Provider.of<QuestionsProvider>(context, listen: false);
       final success = await questionsProvider.addQuestion(
         questionContent,
-        _selectedCategoryId!,
         image: _selectedImage,
       );
 
       log("After submitting question. Success: $success");
 
       if (success) {
-         await _storePaymentDetails();
+        await _storePaymentDetails();
         Fluttertoast.showToast(
           msg: "Question submitted successfully!",
           toastLength: Toast.LENGTH_LONG,
@@ -109,8 +104,6 @@ class _AskNowScreenState extends State<AskNowScreen> {
         );
         _questionController.clear();
         setState(() {
-          _selectedCategory = null;
-          _selectedCategoryId = null;
           _selectedImage = null;
         });
       } else {
@@ -132,7 +125,6 @@ class _AskNowScreenState extends State<AskNowScreen> {
         textColor: Colors.white,
       );
     } finally {
-      // Ensure the loading state is reset, even if an error occurs
       if (mounted) {
         setState(() {
           _isSubmitting = false;
@@ -144,7 +136,6 @@ class _AskNowScreenState extends State<AskNowScreen> {
   Future<bool> _processPayment() async {
     try {
       log("inside process payment");
-      // Step 1: Fetch the client secret from your backend
       final clientSecret = await _fetchClientSecret();
       log(clientSecret.toString());
       _secretKey = clientSecret.toString();
@@ -156,7 +147,6 @@ class _AskNowScreenState extends State<AskNowScreen> {
       }
 
       log("before initializing initpayment sheet..");
-      // Step 2: Initialize the payment sheet
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
@@ -167,13 +157,8 @@ class _AskNowScreenState extends State<AskNowScreen> {
 
       log("after initializing payment sheet");
 
-      // Step 3: Present the payment sheet
       await Stripe.instance.presentPaymentSheet();
       log("payment sheet presented successfully");
-
-      // Step 4: Confirm the payment
-      // await Stripe.instance.confirmPaymentSheetPayment();
-      // log("payment confirmed successfully");
 
       return true; // Payment successful
     } on StripeException catch (e) {
@@ -185,54 +170,85 @@ class _AskNowScreenState extends State<AskNowScreen> {
     }
   }
 
+  Future<bool> _processInfuraPayment() async {
+    try {
+      log("inside process Infura payment");
+
+      final storage = FlutterSecureStorage();
+      String? userAddress = 'userAddress';
+      String? privateKey = 'private key';
+
+      if (userAddress == null || privateKey == null) {
+        throw Exception("User address or private key not found in secure storage");
+      }
+
+      final response = await http.post(
+        Uri.parse('http://192.168.1.127:8000/api/infura/create-payment/'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'amount': 0.01,
+          'user_address': userAddress,
+          'private_key': privateKey,
+          'recipient_address': 'RECIPIENT_ETH_ADDRESS',
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        log("Infura payment processed successfully.");
+        return true; // Payment successful
+      } else {
+        log("Failed to process Infura payment: ${response.body}");
+        return false; // Payment failed
+      }
+    } catch (e) {
+      log("Infura Payment Error: $e");
+      return false; // Payment failed
+    }
+  }
+
   Future<void> _storePaymentDetails() async {
     log("inside store payment details");
-  final storage = FlutterSecureStorage();
+    final storage = FlutterSecureStorage();
   
-  try {
-    // Fetch the payment method details from Stripe
-    final paymentMethod = await Stripe.instance.retrievePaymentIntent(_secretKey);
+    try {
+      final paymentMethod = await Stripe.instance.retrievePaymentIntent(_secretKey);
+      String? userId = await storage.read(key: 'user_id');
 
-    // Retrieve the user ID from secure storage
-    String? userId = await storage.read(key: 'user_id');
+      if (userId == null) {
+        log("User ID not found in secure storage");
+        return;
+      }
 
-    if (userId == null) {
-      log("User ID not found in secure storage");
-      return; // or handle the error as needed
+      final paymentDetails = {
+        'user_id': userId,
+        'stripe_payment_method_id': paymentMethod.id,
+        'card_brand': 'visa',
+        'card_last4': '456'
+      };
+      log("amount is $paymentMethod.amount");
+
+      final response = await http.post(
+        Uri.parse('http://192.168.1.127:8000/api/store-payment-details/'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(paymentDetails),
+      );
+
+      if (response.statusCode == 201) {
+        log("Payment details stored successfully.");
+      } else {
+        log("Failed to store payment details: ${response.body}");
+      }
+    } catch (e) {
+      log("Error storing payment details: $e");
     }
-
-    // Prepare the payment details to send to the backend
-    final paymentDetails = {
-      'user_id': userId, // Now using user_id from secure storage
-      'stripe_payment_method_id': paymentMethod.id,
-      'card_brand': 'visa',
-      'card_last4': '456'
-    };
-    log("amount is $paymentMethod.amount");
-
-    // Send the payment details to the backend
-    final response = await http.post(
-      Uri.parse('http://192.168.1.127:8000/api/store-payment-details/'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(paymentDetails),
-    );
-
-    if (response.statusCode == 201) {
-      log("Payment details stored successfully.");
-    } else {
-      log("Failed to store payment details: ${response.body}");
-    }
-  } catch (e) {
-    log("Error storing payment details: $e");
   }
-}
-
 
   Future<String> _fetchClientSecret() async {
     try {
-      // Call your Django backend to create a PaymentIntent
       final response = await http.post(
         Uri.parse('http://192.168.1.127:8000/api/payments/create-intent/'),
         headers: {
@@ -259,7 +275,6 @@ class _AskNowScreenState extends State<AskNowScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categoriesProvider = Provider.of<CategoriesProvider>(context);
     final isSubmitting = Provider.of<QuestionsProvider>(context).isLoading;
 
     return Scaffold(
@@ -269,40 +284,10 @@ class _AskNowScreenState extends State<AskNowScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Choose a Category",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            if (categoriesProvider.isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (categoriesProvider.categories.isNotEmpty)
-              DropdownButton<String>(
-                value: _selectedCategory,
-                hint: const Text("Select a category"),
-                isExpanded: true,
-                items: categoriesProvider.categories.map((category) {
-                  return DropdownMenuItem<String>(
-                    value: category['name'],
-                    child: Text(category['name']),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                    _selectedCategoryId = categoriesProvider.categories
-                        .firstWhere(
-                            (category) => category['name'] == value)['id'];
-                  });
-                },
-              )
-            else
-              const Text("No categories available."),
-            const SizedBox(height: 16),
-            const Text(
               "Ask Your Question",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Expanded(
               child: Stack(
                 children: [
@@ -335,6 +320,31 @@ class _AskNowScreenState extends State<AskNowScreen> {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Choose Payment Method",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            DropdownButton<String>(
+              value: _paymentMethod,
+              isExpanded: true,
+              items: [
+                DropdownMenuItem(
+                  value: 'stripe',
+                  child: Text('Stripe'),
+                ),
+                DropdownMenuItem(
+                  value: 'infura',
+                  child: Text('Infura'),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _paymentMethod = value!;
+                });
+              },
             ),
             const SizedBox(height: 16),
             SizedBox(

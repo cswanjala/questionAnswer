@@ -89,7 +89,7 @@ class QuestionsProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> addQuestion(String content, int categoryId, {File? image}) async {
+  Future<bool> addQuestion(String content, {File? image}) async {
     log("inside add question method");
     _isLoading = true;
     notifyListeners();
@@ -98,7 +98,6 @@ class QuestionsProvider with ChangeNotifier {
       log(":before form data is reached....");
       FormData formData = FormData.fromMap({
         'content': content,
-        'category': categoryId,
         if (image != null)
           'image': await MultipartFile.fromFile(image.path,
               filename: image.path.split('/').last),
@@ -178,5 +177,5 @@ class QuestionsProvider with ChangeNotifier {
   }
 }
 
-  
+
 
