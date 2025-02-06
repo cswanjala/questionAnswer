@@ -5,7 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:question_nswer/core/features/users/user_provider.dart';
 import 'package:question_nswer/ui/screens/payments_screen.dart';
 import 'package:question_nswer/ui/screens/splash_screen.dart';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({Key? key}) : super(key: key);
@@ -16,12 +17,46 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   final FlutterSecureStorage secureStorage = FlutterSecureStorage();
+  String membershipStatus = 'Basic';
 
   @override
   void initState() {
     super.initState();
-    // Fetch user data when the screen is initialized
+    // Fetch user data and membership status when the screen is initialized
     Provider.of<UserProvider>(context, listen: false).fetchUserData();
+    _fetchMembershipStatus();
+  }
+
+  Future<void> _fetchMembershipStatus() async {
+    final storage = FlutterSecureStorage();
+    String? userId = await storage.read(key: 'user_id');
+
+    if (userId == null) {
+      print("User ID not found in secure storage");
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.1.127:8000/api/membership-plans/?user=$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data.isNotEmpty) {
+          setState(() {
+            membershipStatus = 'Premium';
+          });
+        }
+      } else {
+        print("Failed to fetch membership status: ${response.body}");
+      }
+    } catch (e) {
+      print("Error fetching membership status: $e");
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -74,7 +109,9 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _buildProfileSection(UserProvider userProvider) {
     String baseUrl = "http://192.168.1.127:8000"; // Replace with your actual API base URL
     String? profilePicturePath = userProvider.userData['profile_picture'];
-    String fullProfilePictureUrl = profilePicturePath != null ? '$baseUrl$profilePicturePath' : '';
+    String fullProfilePictureUrl = profilePicturePath != null && !profilePicturePath.startsWith('http')
+        ? '$baseUrl$profilePicturePath'
+        : profilePicturePath ?? '';
 
     return Row(
       children: [
@@ -89,13 +126,13 @@ class _AccountScreenState extends State<AccountScreen> {
           },
           child: profilePicturePath == null
               ? ClipOval(
-            child: Image.asset(
-              'assets/images/default_avatar.png',
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-            ),
-          )
+                  child: Image.asset(
+                    'assets/images/default_avatar.png',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                  ),
+                )
               : null,
         ),
         const SizedBox(width: 16),
@@ -117,7 +154,6 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-
   Widget _buildMembershipInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,14 +164,15 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Status: Premium Member',
+          'Status: $membershipStatus Member',
           style: const TextStyle(fontSize: 14, color: Colors.black87),
         ),
         const SizedBox(height: 4),
-        Text(
-          'Expiry: 12/31/2025',
-          style: const TextStyle(fontSize: 14, color: Colors.black54),
-        ),
+        if (membershipStatus == 'Premium')
+          Text(
+            'Expiry: 12/31/2025',
+            style: const TextStyle(fontSize: 14, color: Colors.black54),
+          ),
       ],
     );
   }

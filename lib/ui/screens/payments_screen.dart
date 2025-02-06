@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -18,8 +19,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   showPaymentSheet() async {
     try {
-      await Stripe.instance.presentPaymentSheet().then((value) {
+      await Stripe.instance.presentPaymentSheet().then((value) async {
         intentPaymentData = null;
+        await saveMembershipPlan(); // Save membership plan after successful payment
       });
     } on Error catch (e) {
       print('Stripe error: ${e.toString()}');
@@ -39,7 +41,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       print(errorMsg.toString());
     }
   }
-
 
   makeIntentForPayment(amountToBeCharged, currency) async {
     try {
@@ -72,9 +73,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-
-
-
   paymentSheetInitialization(amountToBeCharged, currency) async {
     try {
       intentPaymentData = await makeIntentForPayment(amountToBeCharged, currency);
@@ -96,6 +94,41 @@ class _PaymentScreenState extends State<PaymentScreen> {
         print(s);
       }
       print(s.toString());
+    }
+  }
+
+  Future<void> saveMembershipPlan() async {
+    final storage = FlutterSecureStorage();
+    String? userId = await storage.read(key: 'user_id');
+
+    if (userId == null) {
+      print("User ID not found in secure storage");
+      return;
+    }
+
+    final membershipPlanData = {
+      'user': userId,
+      'name': 'monthly',
+      'price': 28,
+      'duration_days': 30,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.1.127:8000/api/membership-plans/'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(membershipPlanData),
+      );
+
+      if (response.statusCode == 201) {
+        print("Membership plan saved successfully.");
+      } else {
+        print("Failed to save membership plan: ${response.body}");
+      }
+    } catch (e) {
+      print("Error saving membership plan: $e");
     }
   }
 

@@ -24,10 +24,44 @@ class _AskNowScreenState extends State<AskNowScreen> {
   bool _isSubmitting = false;
   String _secretKey = "";
   String _paymentMethod = 'stripe'; // Default payment method
+  bool _isPremiumUser = false;
 
   @override
   void initState() {
     super.initState();
+    _checkMembershipStatus();
+  }
+
+  Future<void> _checkMembershipStatus() async {
+    final storage = FlutterSecureStorage();
+    String? userId = await storage.read(key: 'user_id');
+
+    if (userId == null) {
+      print("User ID not found in secure storage");
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.1.127:8000/api/membership-plans/?user=$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data.isNotEmpty) {
+          setState(() {
+            _isPremiumUser = true;
+          });
+        }
+      } else {
+        print("Failed to fetch membership status: ${response.body}");
+      }
+    } catch (e) {
+      print("Error fetching membership status: $e");
+    }
   }
 
   Future<void> _pickImage() async {
@@ -63,10 +97,14 @@ class _AskNowScreenState extends State<AskNowScreen> {
       log("Before processing payment");
       bool paymentSuccess = false;
 
-      if (_paymentMethod == 'stripe') {
-        paymentSuccess = await _processPayment();
-      } else if (_paymentMethod == 'infura') {
-        paymentSuccess = await _processInfuraPayment();
+      if (_isPremiumUser) {
+        paymentSuccess = true; // Skip payment for premium users
+      } else {
+        if (_paymentMethod == 'stripe') {
+          paymentSuccess = await _processPayment();
+        } else if (_paymentMethod == 'infura') {
+          paymentSuccess = await _processInfuraPayment();
+        }
       }
 
       log("Payment success: $paymentSuccess");
@@ -94,7 +132,9 @@ class _AskNowScreenState extends State<AskNowScreen> {
       log("After submitting question. Success: $success");
 
       if (success) {
-        await _storePaymentDetails();
+        if (!_isPremiumUser) {
+          await _storePaymentDetails();
+        }
         Fluttertoast.showToast(
           msg: "Question submitted successfully!",
           toastLength: Toast.LENGTH_LONG,

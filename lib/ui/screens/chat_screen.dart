@@ -47,6 +47,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Initialize chat: Fetch user, load messages, and connect WebSocket
   Future<void> _initializeChat() async {
+
+    log("The image URL is ${widget.expertImage}");
     await _getCurrentUsername();
     final token = await widget.authToken;
     if (token == null) {
@@ -253,9 +255,15 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Row(
           children: [
             if (widget.expertImage != null)
-              CircleAvatar(backgroundImage: NetworkImage(widget.expertImage!), radius: 20)
+              CircleAvatar(
+                backgroundImage: NetworkImage(widget.expertImage!),
+                radius: 20,
+              )
             else
-              CircleAvatar(backgroundImage: AssetImage('assets/images/default_avatar.png'), radius: 20),
+              CircleAvatar(
+                backgroundImage: AssetImage('assets/images/default_avatar.png'),
+                radius: 20,
+              ),
             if (widget.expertImage != null || widget.expertName != null) SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
