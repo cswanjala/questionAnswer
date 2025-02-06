@@ -13,7 +13,8 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  int amount = 2000;
+  int amount = 2800;
+  int displayAmount = 28;
 
   Map<String, dynamic>? intentPaymentData;
 
@@ -73,9 +74,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  paymentSheetInitialization(amountToBeCharged, currency) async {
+  Future<void> paymentSheetInitialization(int amountToBeCharged, String currency) async {
     try {
-      intentPaymentData = await makeIntentForPayment(amountToBeCharged, currency);
+      final intentPaymentData = await makeIntentForPayment(amountToBeCharged, currency);
 
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
@@ -84,11 +85,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           style: ThemeMode.light,
           merchantDisplayName: 'Cosiwa',
         ),
-      ).then((value) => {
-        print(value)
-      });
+      );
 
-      showPaymentSheet();
+      await Stripe.instance.presentPaymentSheet();
+      await saveMembershipPlan(); // Save membership plan after successful payment
     } catch (errorMsg, s) {
       if (kDebugMode) {
         print(s);
@@ -132,49 +132,74 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  // Function to call backend API and create payment intent
-  Future<void> createPaymentIntent() async {
-    try {
-      // Call the backend to create a PaymentIntent
-      final response = await http.post(
-        Uri.parse('http://192.168.1.127:8000/api/payments/create-intent/'),
-      );
-
-      final responseData = json.decode(response.body);
-      final clientSecret = responseData['client_secret'];
-
-      // Set up the payment sheet configuration
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
-          style: ThemeMode.light,
-          merchantDisplayName: 'Cosiwa',
-        ),
-      );
-
-      // Present the payment sheet
-      await Stripe.instance.presentPaymentSheet();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment Successful!')));
-    } catch (e) {
-      print('Error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment failed')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Stripe Payment')),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            paymentSheetInitialization(
-              amount,
-              'USD',
-            );
-          },
-          child: Text('Pay Now $amount USD'),
+      appBar: AppBar(
+        title: Text('Upgrade to Premium'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: Colors.black,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
         ),
+        iconTheme: IconThemeData(color: Colors.black),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Why Upgrade to Premium?',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'As a premium member, you will enjoy the following benefits:',
+              style: TextStyle(fontSize: 18, color: Colors.black87),
+            ),
+            SizedBox(height: 20),
+            _buildBenefitTile('Unlimited questions without additional charges'),
+            _buildBenefitTile('Priority access to top experts'),
+            _buildBenefitTile('Exclusive content and resources'),
+            _buildBenefitTile('Monthly webinars and Q&A sessions'),
+            Spacer(),
+            Center(
+                child: ElevatedButton(
+                onPressed: () {
+                  paymentSheetInitialization(
+                  amount,
+                  'USD',
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue, // Use the same color as the Submit button
+                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text(
+                  'Upgrade  for \$${displayAmount}.00',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBenefitTile(String benefit) {
+    return ListTile(
+      leading: Icon(Icons.check_circle, color: Colors.green, size: 30),
+      title: Text(
+        benefit,
+        style: TextStyle(fontSize: 16, color: Colors.black87),
       ),
     );
   }
