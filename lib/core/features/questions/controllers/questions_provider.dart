@@ -175,6 +175,19 @@ class QuestionsProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> submitQuestion(FormData formData) async {
+    try {
+      final response = await _apiService.post('/questions/', formData);
+      if (response.statusCode == 201) {
+        // Handle successful response
+      } else {
+        // Handle error response
+      }
+    } catch (e) {
+      // Handle exception
+    }
+  }
 }
 
 

@@ -19,6 +19,7 @@ class User(AbstractUser):
 
 class Ratings(models.Model):
     stars = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(5.0)], default=0.0)
+    question = models.ForeignKey('Question', on_delete=models.CASCADE, related_name='ratings',null=True,blank=True)
 
     def __str__(self):
         return f"{self.stars} stars"
@@ -33,7 +34,7 @@ class Expert(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     rating = models.FloatField(default=0.0)
     categories = models.ManyToManyField(Category)
-    title = models.CharField(max_length = 30,default="Expert")
+    title = models.CharField(max_length=30, default="Expert")
 
     def __str__(self):
         return self.user.username
@@ -49,6 +50,12 @@ class Expert(models.Model):
         if total_answers > 0:
             return total_ratings / total_answers
         return 0.0  # Return 0.0 if no ratings exist for this expert
+
+    def save(self, *args, **kwargs):
+        # Ensure the associated user's is_expert field is set to True
+        self.user.is_expert = True
+        self.user.save()
+        super().save(*args, **kwargs)
     
 class FavoriteExpert(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorite_experts")
@@ -62,6 +69,7 @@ class FavoriteExpert(models.Model):
 
 
 class MembershipPlan(models.Model):
+    user = models.ForeignKey(User,on_delete=models.CASCADE,blank=True,null=True)
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     duration_days = models.IntegerField()
@@ -70,6 +78,7 @@ class MembershipPlan(models.Model):
 
     def __str__(self):
         return self.name
+    
 
 # class Payment(models.Model):
 #     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -82,11 +91,13 @@ class MembershipPlan(models.Model):
 
 class Question(models.Model):
     client = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     assigned_expert = models.ForeignKey(Expert, null=True, blank=True, on_delete=models.SET_NULL,related_name='assigned_questions')
     is_active = models.BooleanField(default=True)
+    # rating = models.ForeignKey(Ratings,on_delete=models.CASCADE,null=True,blank=True)
+    # rating = models.FloatField(default=0.0)
     image = models.ImageField(upload_to='question_images/', null=True, blank=True)
 
     def __str__(self):
@@ -128,22 +139,12 @@ class ChatMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
     message = models.TextField()
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='chat_messages') 
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='chat_messages',default=1) 
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.sender} -> {self.receiver}: {self.message[:50]}"
     
-
-class Payment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=15.00)
-    status = models.CharField(max_length=20, choices=[
-        ('pending', 'Pending'),
-        ('completed', 'Completed'),
-        ('failed', 'Failed'),
-    ], default='pending')  # Add default value for status
-    created_at = models.DateTimeField(auto_now_add=True)
 
 class PaymentDetail(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

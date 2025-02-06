@@ -11,11 +11,11 @@ class AuthProvider with ChangeNotifier {
 
   get errorMessage => null;
 
-  Future<bool> register(String username, String email, String password, String confirmPassword, File? profileImage) async {
+  Future<bool> register(String username, String email, String password, String confirmPassword, File? profileImage, bool isExpert, String title, List<String> categories) async {
     _isLoading = true;
     notifyListeners();
 
-    final success = await _authService.register(username, email, password, confirmPassword, profileImage);
+    final success = await _authService.register(username, email, password, confirmPassword, profileImage, isExpert, title, categories);
 
     _isLoading = false;
     notifyListeners();

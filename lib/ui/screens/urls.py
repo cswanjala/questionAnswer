@@ -27,7 +27,8 @@ from .views import (
     index, # Import the chat message viewset
     get_chat_messages,
     store_payment_details,
-    CreateInfuraPaymentView
+    CreateInfuraPaymentView,
+    CompleteExpertRegistrationView
 )
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -67,6 +68,7 @@ urlpatterns = [
     path('assigned-questions/', AssignedQuestionsView.as_view(), name='assigned-questions'),
     path('expert_average_rating/<int:expert_id>/', ExpertAverageRatingView.as_view(), name='expert_average_rating'),
     path('infura/create-payment/', CreateInfuraPaymentView.as_view(), name='create-infura-payment'),
+    path('complete-expert-registration/', CompleteExpertRegistrationView.as_view(), name='complete_expert_registration'),
 ]
 
 

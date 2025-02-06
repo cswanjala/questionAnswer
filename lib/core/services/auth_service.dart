@@ -8,7 +8,7 @@ import 'api_service.dart';
 class AuthService {
   final ApiService _apiService = ApiService();
 
-  Future<bool> register(String username, String email, String password, String confirmPassword, File? profileImage) async {
+  Future<bool> register(String username, String email, String password, String confirmPassword, File? profileImage, bool isExpert, String title, List<String> categories) async {
     if (username.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       Fluttertoast.showToast(msg: "All fields must be filled");
       return false;
@@ -25,6 +25,9 @@ class AuthService {
         'email': email,
         'password': password,
         if (profileImage != null && await profileImage.exists()) 'profile_picture': await MultipartFile.fromFile(profileImage.path),
+        'is_expert': isExpert,
+        if (isExpert) 'title': title,
+        if (isExpert) 'categories': categories.join(','),
       });
 
       final response = await _apiService.post(
@@ -78,7 +81,7 @@ class AuthService {
         }
 
         // Save token, user_id, and username securely
-        await _apiService.saveToken(data['access'], data['id'].toString(), data['username'],data['is_expert']);
+        await _apiService.saveToken(data['access'], data['id'].toString(), data['username']);
         
         return true;
       } else {

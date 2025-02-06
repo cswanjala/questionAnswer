@@ -1,5 +1,6 @@
 # core/views.py
 import json
+from web3 import Web3
 from django.forms import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -8,7 +9,7 @@ from .models import ChatMessage, FavoriteExpert, Notification, PaymentDetail, Us
 from .serializers import ChatMessageSerializer, CustomTokenObtainPairSerializer, ExpertAverageRatingSerializer, FavoriteExpertSerializer, NotificationSerializer, RatingSerializer, RatingsSerializer, UserSerializer, ExpertSerializer, QuestionSerializer, AnswerSerializer, MembershipPlanSerializer,CategorySerializer
 from django.core.exceptions import PermissionDenied
 
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -25,6 +26,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 
 import stripe
+from transformers import pipeline
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -122,18 +124,28 @@ class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff:
+        if (user.is_staff):
             return Question.objects.filter(is_active=True)
-        elif user.is_expert:
+        elif (user.is_expert):
             return Question.objects.filter(assigned_expert__user=user, is_active=True)
         return Question.objects.filter(client=user, is_active=True)
 
     def perform_create(self, serializer):
         question = serializer.save(client=self.request.user, is_active=True)
+        
+        # Automatically assign categories based on question content
+        classifier = pipeline("zero-shot-classification")
+        categories = Category.objects.values_list('name', flat=True)
+        result = classifier(question.content, categories)
+        best_category = result['labels'][0]
+        category = Category.objects.get(name=best_category)
+        question.category = category
+        question.save()
+
         expert = assign_expert_to_question(question, client=self.request.user)
         if expert:
             notify_expert(expert, question)
@@ -218,12 +230,42 @@ class RegisterUserView(APIView):
             user = serializer.save()
             # Generate JWT token
             refresh = RefreshToken.for_user(user)
+            
+            # Check if the user is an expert
+            if user.is_expert:
+                # Create an Expert instance for the user
+                Expert.objects.create(user=user)
+
             return Response({
                 "user": UserSerializer(user).data,
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CompleteExpertRegistrationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if not user.is_expert:
+            return Response({"error": "User is not an expert."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate and save additional expert fields
+        data = request.data
+        categories = data.get('categories', [])
+        title = data.get('title', "Expert")
+
+        expert = user.expert
+        expert.title = title
+        expert.save()
+
+        # Add categories to the expert
+        for category_id in categories:
+            category = Category.objects.get(id=category_id)
+            expert.categories.add(category)
+
+        return Response({"message": "Expert registration completed successfully."}, status=status.HTTP_200_OK)
     
 class AssignedQuestionsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -596,59 +638,53 @@ def store_payment_details(request):
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
 
-from web3 import Web3
-
-# Infura project ID
-INFURA_PROJECT_ID = 'db89f5628f214355971a7a2c3a4d3395'
-INFURA_URL = f'https://mainnet.infura.io/v3/{INFURA_PROJECT_ID}'
-
-# Connect to Infura
-web3 = Web3(Web3.HTTPProvider(INFURA_URL))
-
 class CreateInfuraPaymentView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             data = request.data
-            amount = data.get('amount', 0)
-            api_key = data.get('api_key')
-            user_address = data.get('user_address')  # Ethereum address of the user
-            private_key = data.get('private_key')  # Private key of the user's Ethereum wallet
+            amount = data.get('amount', 10)  # Amount in Ether
+            user_address = data.get('user_address')  # Sender's Ethereum address
+            private_key = data.get('private_key')  # Sender's private key (for signing)
+            recipient_address = data.get('recipient_address')  # Recipient's Ethereum address
 
-            if amount <= 0:
+            if int(amount) <= 0:
                 return Response({"error": "Invalid amount"}, status=status.HTTP_400_BAD_REQUEST)
 
-            if not web3.isConnected():
-                return Response({"error": "Failed to connect to Infura"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Connect to Ethereum via Infura
+            infura_url = f"https://mainnet.infura.io/v3/{settings.INFURA_PROJECT_ID}"
+            web3 = Web3(Web3.HTTPProvider(infura_url))
 
-            # Convert amount to Wei (1 Ether = 10^18 Wei)
-            amount_in_wei = web3.toWei(amount, 'ether')
+            # Check if connected
+            if not web3.is_connected():
+                return Response({"error": "Failed to connect to Ethereum network"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            # Create a transaction
-            transaction = {
-                'to': 'recipient_ethereum_address',  # Replace with your recipient address
-                'value': amount_in_wei,
+            # Convert amount to Wei
+            amount_wei = web3.toWei(amount, 'ether')
+
+            # Get the nonce for the transaction
+            nonce = web3.eth.getTransactionCount(user_address)
+
+            # Create the transaction
+            tx = {
+                'nonce': nonce,
+                'to': recipient_address,
+                'value': amount_wei,
                 'gas': 2000000,
                 'gasPrice': web3.toWei('50', 'gwei'),
-                'nonce': web3.eth.getTransactionCount(user_address),
-                'chainId': 1  # Mainnet chain ID
+                'chainId': web3.eth.chain_id
             }
 
             # Sign the transaction
-            signed_txn = web3.eth.account.signTransaction(transaction, private_key)
+            signed_tx = web3.eth.account.signTransaction(tx, private_key)
 
             # Send the transaction
-            txn_hash = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+            tx_hash = web3.eth.sendRawTransaction(signed_tx.rawTransaction)
 
-            # Wait for the transaction receipt
-            txn_receipt = web3.eth.waitForTransactionReceipt(txn_hash)
-
-            if txn_receipt.status == 1:
-                return Response({
-                    "message": "Infura payment processed successfully.",
-                    "transaction_hash": txn_hash.hex()
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({"error": "Transaction failed"}, status=status.HTTP_400_BAD_REQUEST)
+            # Return the transaction hash
+            return Response({
+                "message": "Transaction sent successfully.",
+                "tx_hash": tx_hash.hex()
+            }, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

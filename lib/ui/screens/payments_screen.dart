@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:question_nswer/core/services/api_service.dart';
-import 'package:question_nswer/keys.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:question_nswer/keys.dart';
 
 class PaymentScreen extends StatefulWidget {
   @override
@@ -11,17 +12,14 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  final ApiService _apiService = ApiService();
-  int amount = 2800;
-  String membershipPlanName = "expertmonthly"; // Add membership plan name
+  int amount = 2000;
 
   Map<String, dynamic>? intentPaymentData;
 
   showPaymentSheet() async {
     try {
-      await Stripe.instance.presentPaymentSheet().then((value) async {
+      await Stripe.instance.presentPaymentSheet().then((value) {
         intentPaymentData = null;
-        await saveMembershipPlan(); // Save membership plan after successful payment
       });
     } on Error catch (e) {
       print('Stripe error: ${e.toString()}');
@@ -42,34 +40,40 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+
   makeIntentForPayment(amountToBeCharged, currency) async {
     try {
       // Convert the amount to cents (if it's in dollars, for example, $20 becomes 2000 cents)
       int amountInCents = amountToBeCharged * 100;
 
-      // Prepare the form data for the request, including the membership plan name
+      // Prepare the form data for the request, including the automatic payment method parameter
       Map<String, String> paymentInfo = {
         'amount': amountInCents.toString(),  // Stripe expects the amount in the smallest currency unit
         'currency': currency,
         'automatic_payment_methods[enabled]': 'true',  // Add automatic payment methods enabled
-        'metadata[membership_plan]': membershipPlanName, // Add membership plan name to metadata
       };
 
-      var responseFromStripeApi = await _apiService.post(
-        'https://api.stripe.com/v1/payment_intents',
-        paymentInfo,
-        requiresAuth: false,
+      var responseFromStripeApi = await http.post(
+        Uri.parse('https://api.stripe.com/v1/payment_intents'),
+        body: paymentInfo,
+        headers: {
+          "Authorization": "Bearer $SecretKey",  // Use your Stripe Secret Key
+          "Content-Type": "application/x-www-form-urlencoded",  // Correct Content-Type
+        },
       );
 
-      print("Response from Stripe API: " + responseFromStripeApi.data);
+      print("Response from Stripe API: " + responseFromStripeApi.body);
 
       // Decode the response if it's successful
-      return jsonDecode(responseFromStripeApi.data);
+      return jsonDecode(responseFromStripeApi.body);
     } catch (errorMsg, s) {
       print(s?.toString());
       print(errorMsg?.toString());
     }
   }
+
+
+
 
   paymentSheetInitialization(amountToBeCharged, currency) async {
     try {
@@ -95,30 +99,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  Future<void> saveMembershipPlan() async {
+  // Function to call backend API and create payment intent
+  Future<void> createPaymentIntent() async {
     try {
-      final userData = await _apiService.getUserData();
-      String? userId = userData['user_id'];
-
-      final response = await _apiService.post(
-        '/api/membership-plans/',
-        jsonEncode({
-          'user': userId, // Replace with actual user ID from secure storage
-          'name': membershipPlanName,
-          'price': amount / 100,
-          'duration_days': 30, // Example duration
-          'can_ask_unlimited': true,
-          'can_chat_with_expert': true,
-        }),
+      // Call the backend to create a PaymentIntent
+      final response = await http.post(
+        Uri.parse('http://192.168.1.127:8000/api/payments/create-intent/'),
       );
 
-      if (response.statusCode == 200) {
-        print('Membership plan saved successfully');
-      } else {
-        print('Failed to save membership plan');
-      }
+      final responseData = json.decode(response.body);
+      final clientSecret = responseData['client_secret'];
+
+      // Set up the payment sheet configuration
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          style: ThemeMode.light,
+          merchantDisplayName: 'Cosiwa',
+        ),
+      );
+
+      // Present the payment sheet
+      await Stripe.instance.presentPaymentSheet();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment Successful!')));
     } catch (e) {
-      print('Error saving membership plan: $e');
+      print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment failed')));
     }
   }
 
@@ -134,7 +140,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               'USD',
             );
           },
-          child: Text('Pay Now ${amount/100} USD'),
+          child: Text('Pay Now $amount USD'),
         ),
       ),
     );
