@@ -91,8 +91,11 @@ class _AccountScreenState extends State<AccountScreen> {
               child: ElevatedButton(
                 onPressed: () => _logout(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: Colors.blue, // Use the same color as the Submit button
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
                 ),
                 child: const Text(
                   'Logout',
@@ -198,7 +201,7 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
         ListTile(
           leading: const Icon(Icons.credit_card, color: Colors.blue),
-          title: const Text('Add Credit Card', style: TextStyle(fontSize: 16)),
+          title: const Text('Upgrade Membership', style: TextStyle(fontSize: 16)),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           onTap: () {
             // Navigate to Add Credit Card Screen
