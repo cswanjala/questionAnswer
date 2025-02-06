@@ -74,7 +74,8 @@ class _ChatScreenState extends State<ChatScreen> {
   // Generate a unique room name
   String _generateRoomName(String user1, String user2) {
     final participants = [user1, user2]..sort();
-    return participants.join('_');
+    final questionId = widget.questionId ?? 0; // Default to 0 if questionId is null
+    return '${participants.join('_')}_$questionId';
   }
 
   // Load previous chat messages from the backend
@@ -103,8 +104,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Initialize WebSocket connection
   void _initializeWebSocket(String roomName, String token) {
+    final questionId = widget.questionId ?? 0; // Default to 0 if questionId is null
     _channel = WebSocketChannel.connect(
-      Uri.parse('ws://192.168.1.127:8000/ws/chat/$roomName/?token=$token'),
+      Uri.parse('ws://192.168.1.127:8000/ws/chat/$roomName/$questionId/?token=$token'),
     );
 
     _channel.stream.listen(
@@ -133,6 +135,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'message': content,
       'sender': widget.senderUsername,
       'receiver': widget.recipientUsername,
+      'question_id': widget.questionId, // Include questionId in messageData
     };
     _channel.sink.add(json.encode(messageData));
     _messageController.clear();

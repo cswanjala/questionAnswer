@@ -198,14 +198,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   : "Unknown time";
               final isActive = question['is_active'] ?? false;
 
+              final profilePicture = isExpert
+                  ? question['client']['profile_picture']
+                  : assignedExpert?['user']['profile_picture'];
+              final username = isExpert
+                  ? question['client']['username']
+                  : assignedExpert?['user']['username'];
+
+                print("This is an expert or not "+isExpert.toString());
+
               return GestureDetector(
                 onTap: () async {
                   // Fetch the current logged-in user's username
                   final secureStorage = FlutterSecureStorage();
                   final senderUsername = await secureStorage.read(key: 'username');
-                  final image = assignedExpert != null
-                      ? assignedExpert['user']['profile_picture']
-                      : null;
+                  final image = isExpert
+                      ? question['client']['profile_picture']
+                      : assignedExpert != null
+                          ? assignedExpert['user']['profile_picture']
+                          : null;
 
                   // Determine the recipient username based on isExpert
                   final recipientUsername = isExpert
@@ -224,9 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           senderUsername: senderUsername,
                           recipientUsername: recipientUsername,
                           expertName: recipientUsername,
-                          expertImage: image != null
-                              ? '$baseUrl$image'
-                              : null,
+                          expertImage: image,
                           expertCategory: assignedExpert?['categories'] != null &&
                                   assignedExpert['categories'] is List &&
                                   assignedExpert['categories'].isNotEmpty
@@ -249,10 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: Stack(
                       children: [
                         CircleAvatar(
-                          backgroundImage: assignedExpert != null &&
-                                  assignedExpert['user'] != null &&
-                                  assignedExpert['user']['profile_picture'] != null
-                              ? NetworkImage(assignedExpert['user']['profile_picture'])
+                          backgroundImage: profilePicture != null
+                              ? NetworkImage(profilePicture)
                               : const AssetImage('assets/images/default_avatar.png')
                                   as ImageProvider,
                         ),
@@ -272,11 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     title: Text(
-                      isExpert
-                        ? question['client']['username']
-                        : assignedExpert != null
-                          ? assignedExpert['user']['username']
-                          : 'Unassigned',
+                      username ?? 'Unassigned',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Column(

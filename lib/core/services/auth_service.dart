@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:dio/dio.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 
 class AuthService {
@@ -76,13 +77,17 @@ class AuthService {
           log("Access Token: ${data['access']}");
           log("User ID: ${data['id']}");
           log("Username: ${data['username']}");
+          log("Is Expert: ${data['is_expert']}");
         } else {
           log("Unexpected data format: ${data.runtimeType}");
         }
 
-        // Save token, user_id, and username securely
+        // Save token, user_id, username, and is_expert securely
         await _apiService.saveToken(data['access'], data['id'].toString(), data['username']);
         
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_expert', data['is_expert']);
+
         return true;
       } else {
         Fluttertoast.showToast(msg: "Login failed: ${response.data}");
