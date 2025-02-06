@@ -47,6 +47,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Initialize chat: Fetch user, load messages, and connect WebSocket
   Future<void> _initializeChat() async {
+
+    log("The image URL is ${widget.expertImage}");
     await _getCurrentUsername();
     final token = await widget.authToken;
     if (token == null) {
@@ -72,7 +74,8 @@ class _ChatScreenState extends State<ChatScreen> {
   // Generate a unique room name
   String _generateRoomName(String user1, String user2) {
     final participants = [user1, user2]..sort();
-    return participants.join('_');
+    final questionId = widget.questionId ?? 0; // Default to 0 if questionId is null
+    return '${participants.join('_')}_$questionId';
   }
 
   // Load previous chat messages from the backend
@@ -101,8 +104,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Initialize WebSocket connection
   void _initializeWebSocket(String roomName, String token) {
+    final questionId = widget.questionId ?? 0; // Default to 0 if questionId is null
     _channel = WebSocketChannel.connect(
-      Uri.parse('ws://192.168.1.127:8000/ws/chat/$roomName/?token=$token'),
+      Uri.parse('ws://192.168.1.127:8000/ws/chat/$roomName/$questionId/?token=$token'),
     );
 
     _channel.stream.listen(
@@ -131,6 +135,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'message': content,
       'sender': widget.senderUsername,
       'receiver': widget.recipientUsername,
+      'question_id': widget.questionId, // Include questionId in messageData
     };
     _channel.sink.add(json.encode(messageData));
     _messageController.clear();
@@ -253,9 +258,15 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Row(
           children: [
             if (widget.expertImage != null)
-              CircleAvatar(backgroundImage: NetworkImage(widget.expertImage!), radius: 20)
+              CircleAvatar(
+                backgroundImage: NetworkImage(widget.expertImage!),
+                radius: 20,
+              )
             else
-              CircleAvatar(backgroundImage: AssetImage('assets/images/default_avatar.png'), radius: 20),
+              CircleAvatar(
+                backgroundImage: AssetImage('assets/images/default_avatar.png'),
+                radius: 20,
+              ),
             if (widget.expertImage != null || widget.expertName != null) SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

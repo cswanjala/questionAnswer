@@ -4,10 +4,13 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     AllMessagesView,
+    AssignedQuestionsView,
     ChatMessageView,
     CreatePaymentIntentView,
+    ExpertAverageRatingView,
     FavoriteExpertView,
     NotificationViewSet,
+    RatingsViewSet,
     UserViewSet,
     ExpertViewSet,
     QuestionViewSet,
@@ -23,7 +26,9 @@ from .views import (
     get_favorite_experts,
     index, # Import the chat message viewset
     get_chat_messages,
-    store_payment_details
+    store_payment_details,
+    CreateInfuraPaymentView,
+    CompleteExpertRegistrationView
 )
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -37,6 +42,8 @@ router.register('answers', AnswerViewSet, basename='answer')
 router.register('membership-plans', MembershipPlanViewSet, basename='membershipplan')
 router.register('categories', CategoryViewSet, basename='category')
 router.register('notifications', NotificationViewSet, basename='notification')
+# router.register('ratings', NotificationViewSet, basename='ratings')
+router.register('ratings', RatingsViewSet,basename='ratings')
 
 # Combine router URLs with custom paths
 urlpatterns = [
@@ -58,6 +65,10 @@ urlpatterns = [
     path('create_chat_message/', create_chat_message, name='create_chat_message'),
     path('user/', CurrentUserView.as_view(), name='current_user'), 
     path('store-payment-details/', store_payment_details, name='store_payment_details'),
+    path('assigned-questions/', AssignedQuestionsView.as_view(), name='assigned-questions'),
+    path('expert_average_rating/<int:expert_id>/', ExpertAverageRatingView.as_view(), name='expert_average_rating'),
+    path('infura/create-payment/', CreateInfuraPaymentView.as_view(), name='create-infura-payment'),
+    path('complete-expert-registration/', CompleteExpertRegistrationView.as_view(), name='complete_expert_registration'),
 ]
 
 

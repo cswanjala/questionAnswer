@@ -19,6 +19,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   File? _profileImage;
+  bool _isExpert = false;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
+  List<String> _categories = [];
 
   /// Picks an image from the gallery
   Future<void> _pickImage() async {
@@ -53,14 +57,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final isRegistered = await authProvider.register(username, email, password, confirmPassword, _profileImage);
+    // Populate _categories from _categoryController
+    if (_isExpert) {
+      _categories = _categoryController.text.split(',').map((e) => e.trim()).toList();
+    }
+
+    final isRegistered = await authProvider.register(
+      username, email, password, confirmPassword, _profileImage, _isExpert, _titleController.text, _categories
+    );
 
     if (isRegistered) {
       final isLoggedIn = await authProvider.login(username, password);
       if (isLoggedIn) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomepageScreen()),
+          (Route<dynamic> route) => false,
         );
       }
     }
@@ -125,7 +137,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 20),
                 _buildTextField(_confirmPasswordController, "Confirm Password", obscureText: true),
                 const SizedBox(height: 30),
-
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _isExpert,
+                      onChanged: (value) {
+                        setState(() {
+                          _isExpert = value!;
+                        });
+                      },
+                    ),
+                    const Text("Register as Expert"),
+                  ],
+                ),
+                if (_isExpert) ...[
+                  _buildTextField(_titleController, "Title"),
+                  const SizedBox(height: 20),
+                  _buildTextField(_categoryController, "Categories (comma separated)"),
+                  const SizedBox(height: 20),
+                ],
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, child) {
                     return ElevatedButton(

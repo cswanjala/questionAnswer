@@ -1,14 +1,15 @@
 # core/views.py
 import json
+from web3 import Web3
 from django.forms import ValidationError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from rest_framework import viewsets
-from .models import ChatMessage, FavoriteExpert, Notification, Payment, PaymentDetail, User, Expert, Question, Answer, MembershipPlan,Category
-from .serializers import ChatMessageSerializer, CustomTokenObtainPairSerializer, FavoriteExpertSerializer, NotificationSerializer, UserSerializer, ExpertSerializer, QuestionSerializer, AnswerSerializer, MembershipPlanSerializer,CategorySerializer
+from .models import ChatMessage, FavoriteExpert, Notification, PaymentDetail, User, Expert, Question, Answer, MembershipPlan,Category,Ratings
+from .serializers import ChatMessageSerializer, CustomTokenObtainPairSerializer, ExpertAverageRatingSerializer, FavoriteExpertSerializer, NotificationSerializer, RatingSerializer, RatingsSerializer, UserSerializer, ExpertSerializer, QuestionSerializer, AnswerSerializer, MembershipPlanSerializer,CategorySerializer
 from django.core.exceptions import PermissionDenied
 
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -23,7 +24,9 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.decorators import api_view,permission_classes
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+
 import stripe
+from transformers import pipeline
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -31,7 +34,7 @@ class CreatePaymentIntentView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             data = request.data
-            amount = 20.0  # Amount in cents
+            amount = 500  # Amount in cents
             currency = 'usd'
 
             if amount <= 0:
@@ -52,27 +55,11 @@ class CreatePaymentIntentView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class MembershipViewSet(viewsets.ModelViewSet):
+    queryset = MembershipPlan.objects.all()
+    serializer_class = MembershipPlanSerializer()
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def process_payment(request):
-    try:
-        # Charge the user $15
-        payment_intent = stripe.PaymentIntent.create(
-            amount=1500,  # Amount in cents
-            currency="usd",
-            payment_method=request.data.get('payment_method_id'),  # Provided by frontend
-            confirm=True,
-        )
-        # Save the payment in the database
-        Payment.objects.create(
-            user=request.user,
-            amount=15.00,
-            status="completed",
-        )
-        return JsonResponse({"success": True, "payment_id": payment_intent.id})
-    except stripe.error.CardError as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=400)
 
 def index(request):
     return render(request, "chat/index.html")
@@ -85,6 +72,32 @@ class ExpertViewSet(viewsets.ModelViewSet):
     queryset = Expert.objects.all()
     serializer_class = ExpertSerializer
 
+class ExpertAverageRatingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, expert_id):
+        try:
+            expert = Expert.objects.get(id=expert_id)
+        except Expert.DoesNotExist:
+            return Response({"error": "Expert not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get all questions assigned to the expert that have ratings
+        questions_with_ratings = Question.objects.filter(assigned_expert=expert, ratings__isnull=False)
+        
+        # Compute the total and average rating
+        total_ratings = sum(rating.stars for question in questions_with_ratings for rating in question.ratings.all())
+        total_questions = questions_with_ratings.count()
+        average_rating = total_ratings / total_questions if total_questions > 0 else 0.0
+
+        # Prepare the response data
+        response_data = {
+            "expert_id": expert.id,
+            "average_rating": average_rating
+        }
+
+        serializer = ExpertAverageRatingSerializer(response_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -92,54 +105,52 @@ class CurrentUserView(APIView):
         user = request.user
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class RatingsViewSet(viewsets.ModelViewSet):
+    queryset = Ratings.objects.all()
+    serializer_class = RatingsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        rating = serializer.save()
+        question = rating.question
+
+        # Deactivate the question
+        question.is_active = False
+        question.save()
+    
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff:
-            return Question.objects.all()
-        return Question.objects.filter(client=user)
+        if (user.is_staff):
+            return Question.objects.filter(is_active=True)
+        elif (user.is_expert):
+            return Question.objects.filter(assigned_expert__user=user, is_active=True)
+        return Question.objects.filter(client=user, is_active=True)
 
     def perform_create(self, serializer):
-        question = serializer.save(client=self.request.user)
+        question = serializer.save(client=self.request.user, is_active=True)
+        
+        # Automatically assign categories based on question content
+        classifier = pipeline("zero-shot-classification")
+        categories = Category.objects.values_list('name', flat=True)
+        result = classifier(question.content, categories)
+        best_category = result['labels'][0]
+        category = Category.objects.get(name=best_category)
+        question.category = category
+        question.save()
+
         expert = assign_expert_to_question(question, client=self.request.user)
         if expert:
             notify_expert(expert, question)
 
     def create(self, request, *args, **kwargs):
-        # Extract payment details from the request
-        # payment_data = request.data.get('payment', {})
-        # payment_method_id = payment_data.get('payment_method_id')
-
-        # if not payment_method_id:
-        #     raise ValidationError("Payment method ID is required.")
-
-        # # Process the payment using PaymentIntent
-        # amount = 1500  # $15 in cents
-        # currency = 'usd'
-        # try:
-        #     # Create a PaymentIntent without requiring a merchant ID
-        #     intent = stripe.PaymentIntent.create(
-        #         amount=amount,
-        #         currency=currency,
-        #         payment_method=payment_method_id,
-        #         confirm=True
-        #     )
-
-        #     # Payment was successful, store payment information
-        #     self.store_payment_details(payment_method_id)
-
-        # except stripe.error.CardError as e:
-        #     return Response({"error": "Payment failed. Please try again."}, status=status.HTTP_402_PAYMENT_REQUIRED)
-        # except Exception as e:
-        #     return Response({"error": "An error occurred during payment processing."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Proceed with creating the question after payment is successful
         response = super().create(request, *args, **kwargs)
         question = Question.objects.get(pk=response.data['id'])
         assigned_expert = question.assigned_expert
@@ -219,14 +230,61 @@ class RegisterUserView(APIView):
             user = serializer.save()
             # Generate JWT token
             refresh = RefreshToken.for_user(user)
+            
+            # Check if the user is an expert
+            if user.is_expert:
+                # Create an Expert instance for the user
+                Expert.objects.create(user=user)
+
             return Response({
                 "user": UserSerializer(user).data,
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
+class CompleteExpertRegistrationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if not user.is_expert:
+            return Response({"error": "User is not an expert."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate and save additional expert fields
+        data = request.data
+        categories = data.get('categories', [])
+        title = data.get('title', "Expert")
+
+        expert = user.expert
+        expert.title = title
+        expert.save()
+
+        # Add categories to the expert
+        for category_id in categories:
+            category = Category.objects.get(id=category_id)
+            expert.categories.add(category)
+
+        return Response({"message": "Expert registration completed successfully."}, status=status.HTTP_200_OK)
+    
+class AssignedQuestionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        Get all questions assigned to the current authenticated expert.
+        """
+        user = request.user
+
+        # Ensure the user is an expert
+        if not hasattr(user, 'expert'):
+            return Response({"error": "You are not an expert."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Retrieve questions assigned to the expert
+        questions = Question.objects.filter(assigned_expert=user.expert)
+
+        serializer = QuestionSerializer(questions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class LoginView(TokenObtainPairView):
     """
@@ -541,6 +599,7 @@ def store_payment_details(request):
     """
     View to store payment details after a successful payment
     """
+    print("store payment triggered...");
     if request.method == 'POST':
         try:
             # Assuming the data comes as JSON
@@ -549,8 +608,11 @@ def store_payment_details(request):
             card_brand = request.data.get('card_brand')
             card_last4 = request.data.get('card_last4')
 
+            print(request.data);
+
             # Find the user who made the payment
             user = User.objects.get(id=user_id)
+            print(user)
 
             # Save payment details in the database
             payment_detail = PaymentDetail.objects.create(
@@ -559,6 +621,7 @@ def store_payment_details(request):
                 card_brand=card_brand,
                 card_last4=card_last4
             )
+            print(payment_detail);
 
             return Response({
                 'message': 'Payment details stored successfully.',
@@ -574,3 +637,54 @@ def store_payment_details(request):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class CreateInfuraPaymentView(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = request.data
+            amount = data.get('amount', 10)  # Amount in Ether
+            user_address = data.get('user_address')  # Sender's Ethereum address
+            private_key = data.get('private_key')  # Sender's private key (for signing)
+            recipient_address = data.get('recipient_address')  # Recipient's Ethereum address
+
+            if int(amount) <= 0:
+                return Response({"error": "Invalid amount"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Connect to Ethereum via Infura
+            infura_url = f"https://mainnet.infura.io/v3/{settings.INFURA_PROJECT_ID}"
+            web3 = Web3(Web3.HTTPProvider(infura_url))
+
+            # Check if connected
+            if not web3.is_connected():
+                return Response({"error": "Failed to connect to Ethereum network"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Convert amount to Wei
+            amount_wei = web3.toWei(amount, 'ether')
+
+            # Get the nonce for the transaction
+            nonce = web3.eth.getTransactionCount(user_address)
+
+            # Create the transaction
+            tx = {
+                'nonce': nonce,
+                'to': recipient_address,
+                'value': amount_wei,
+                'gas': 2000000,
+                'gasPrice': web3.toWei('50', 'gwei'),
+                'chainId': web3.eth.chain_id
+            }
+
+            # Sign the transaction
+            signed_tx = web3.eth.account.signTransaction(tx, private_key)
+
+            # Send the transaction
+            tx_hash = web3.eth.sendRawTransaction(signed_tx.rawTransaction)
+
+            # Return the transaction hash
+            return Response({
+                "message": "Transaction sent successfully.",
+                "tx_hash": tx_hash.hex()
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
