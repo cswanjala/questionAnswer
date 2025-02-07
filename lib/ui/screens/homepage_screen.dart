@@ -92,7 +92,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String baseUrl = 'http://192.168.1.127:8000';
+  final String baseUrl = 'http://50.6.205.45:8000';
   late bool isExpert;
 
   @override

@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="question_nswer"
+        android:label="expertAskAnswer"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
