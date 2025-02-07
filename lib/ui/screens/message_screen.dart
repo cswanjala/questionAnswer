@@ -49,7 +49,7 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Future<void> _fetchMessages(String token, String username) async {
-    final url = Uri.parse('http://192.168.1.127:8000/api/messages/');
+    final url = Uri.parse('http://50.6.205.45:8000/api/messages/');
     try {
       final response = await http.get(
         url,

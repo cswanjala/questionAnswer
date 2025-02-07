@@ -12,10 +12,10 @@ class FavoriteExpertsService {
       final response = await _apiService.get(ApiConstants.favoriteExpertsEndpoint);
 
       if (response.statusCode == 200) {
-        Fluttertoast.showToast(msg: "Favorite experts fetched successfully");
+        // Fluttertoast.showToast(msg: "Favorite experts fetched successfully");
         return response.data;
       } else {
-        Fluttertoast.showToast(msg: "Failed to fetch favorite experts: ${response.data}");
+        // Fluttertoast.showToast(msg: "Failed to fetch favorite experts: ${response.data}");
         return [];
       }
     } catch (e) {

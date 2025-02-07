@@ -32,7 +32,7 @@ class ExpertsProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         _currentUser = response.data;
         notifyListeners();
-        Fluttertoast.showToast(msg: "Current user data fetched successfully!");
+        // Fluttertoast.showToast(msg: "Current user data fetched successfully!");
       } else {
         Fluttertoast.showToast(msg: "Failed to fetch current user: ${response.statusMessage}");
       }
@@ -55,7 +55,7 @@ class ExpertsProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         _experts = List<Map<String, dynamic>>.from(response.data);
         notifyListeners();
-        Fluttertoast.showToast(msg: "Experts fetched successfully!");
+        // Fluttertoast.showToast(msg: "Experts fetched successfully!");
       } else {
         Fluttertoast.showToast(msg: "Failed to fetch experts: ${response.statusMessage}");
       }
@@ -162,7 +162,7 @@ class ExpertsProvider with ChangeNotifier {
   // Method to add an expert to the user's favorite list
   Future<void> addFavoriteExpert(int expertId) async {
     final authToken = await _storage.read(key: 'auth_token');
-    final url = 'http://192.168.1.127:8000/api/addfavexpert'; // Replace with your API URL
+    final url = 'http://50.6.205.45:8000/api/addfavexpert'; // Replace with your API URL
 
     final response = await http.post(
       Uri.parse(url),
