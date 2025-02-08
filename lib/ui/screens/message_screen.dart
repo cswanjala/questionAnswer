@@ -49,7 +49,7 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Future<void> _fetchMessages(String token, String username) async {
-    final url = Uri.parse('http://50.6.205.45:8000/api/messages/');
+    final url = Uri.parse('http://192.168.1.127:8000/api/messages/');
     try {
       final response = await http.get(
         url,
@@ -71,7 +71,8 @@ class _MessageScreenState extends State<MessageScreen> {
     }
   }
 
-  Map<String, dynamic> _getLastMessages(List<Map<String, dynamic>> messages, String username) {
+  Map<String, dynamic> _getLastMessages(
+      List<Map<String, dynamic>> messages, String username) {
     final Map<String, dynamic> lastMessages = {};
 
     for (var message in messages) {
@@ -114,67 +115,67 @@ class _MessageScreenState extends State<MessageScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : ListView.builder(
-        itemCount: _lastMessages.length,
-        itemBuilder: (context, index) {
-          final key = _lastMessages.keys.elementAt(index);
-          final message = _lastMessages[key];
+              itemCount: _lastMessages.length,
+              itemBuilder: (context, index) {
+                final key = _lastMessages.keys.elementAt(index);
+                final message = _lastMessages[key];
 
-          return Card(
-            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: ListTile(
-              leading: Stack(
-                children: [
-                  CircleAvatar(
-                    child: Text(key[0].toUpperCase()),
-                  ),
-                  if (message['is_new'] == true)
-                    Positioned(
-                      right: 0,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.red,
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  child: ListTile(
+                    leading: Stack(
+                      children: [
+                        CircleAvatar(
+                          child: Text(key[0].toUpperCase()),
                         ),
-                      ),
+                        if (message['is_new'] == true)
+                          Positioned(
+                            right: 0,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
-              title: Text(
-                key,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(message['message']),
-                  SizedBox(height: 4),
-                  Text(
-                    _formatTimestamp(message['timestamp']),
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatScreen(
-                      senderUsername: message['sender_username'],
-                      recipientUsername: message['recipient_username'],
-                      expertName: key,
-                      expertImage: null, // Adjust as needed
-                      expertCategory: 'category', // Adjust as needed
-                      authToken: secureStorage.read(key: 'auth_token'),
+                    title: Text(
+                      key,
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(message['message']),
+                        SizedBox(height: 4),
+                        Text(
+                          _formatTimestamp(message['timestamp']),
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(
+                            senderUsername: message['sender_username'],
+                            recipientUsername: message['recipient_username'],
+                            expertName: key,
+                            expertImage: null, // Adjust as needed
+                            expertCategory: 'category', // Adjust as needed
+                            authToken: secureStorage.read(key: 'auth_token'),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
             ),
-          );
-        },
-      ),
     );
   }
 }

@@ -10,9 +10,11 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _currentPasswordController =
+      TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _isLoading = false;
 
   Future<void> _changePassword() async {
@@ -37,7 +39,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
       try {
         final response = await http.post(
-          Uri.parse('http://50.6.205.45:8000/api/change-password/'),
+          Uri.parse('http://192.168.1.127:8000/api/change-password/'),
           headers: {
             'Content-Type': 'application/json',
           },
@@ -51,7 +53,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           Navigator.pop(context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to change password: ${response.body}')),
+            SnackBar(
+                content: Text('Failed to change password: ${response.body}')),
           );
         }
       } catch (e) {
@@ -138,11 +141,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   child: _isLoading
                       ? CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         )
                       : Text(
                           'Change Password',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
                         ),
                 ),
               ),

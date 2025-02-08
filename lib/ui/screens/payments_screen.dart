@@ -50,17 +50,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       // Prepare the form data for the request, including the automatic payment method parameter
       Map<String, String> paymentInfo = {
-        'amount': amountInCents.toString(),  // Stripe expects the amount in the smallest currency unit
+        'amount': amountInCents
+            .toString(), // Stripe expects the amount in the smallest currency unit
         'currency': currency,
-        'automatic_payment_methods[enabled]': 'true',  // Add automatic payment methods enabled
+        'automatic_payment_methods[enabled]':
+            'true', // Add automatic payment methods enabled
       };
 
       var responseFromStripeApi = await http.post(
         Uri.parse('https://api.stripe.com/v1/payment_intents'),
         body: paymentInfo,
         headers: {
-          "Authorization": "Bearer $SecretKey",  // Use your Stripe Secret Key
-          "Content-Type": "application/x-www-form-urlencoded",  // Correct Content-Type
+          "Authorization": "Bearer $SecretKey", // Use your Stripe Secret Key
+          "Content-Type":
+              "application/x-www-form-urlencoded", // Correct Content-Type
         },
       );
 
@@ -74,9 +77,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  Future<void> paymentSheetInitialization(int amountToBeCharged, String currency) async {
+  Future<void> paymentSheetInitialization(
+      int amountToBeCharged, String currency) async {
     try {
-      final intentPaymentData = await makeIntentForPayment(amountToBeCharged, currency);
+      final intentPaymentData =
+          await makeIntentForPayment(amountToBeCharged, currency);
 
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
@@ -115,7 +120,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://50.6.205.45:8000/api/membership-plans/'),
+        Uri.parse('http://192.168.1.127:8000/api/membership-plans/'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -154,7 +159,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text(
               'Why Upgrade to Premium?',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+              style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueAccent),
             ),
             SizedBox(height: 20),
             Text(
@@ -168,23 +176,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _buildBenefitTile('Monthly webinars and Q&A sessions'),
             Spacer(),
             Center(
-                child: ElevatedButton(
+              child: ElevatedButton(
                 onPressed: () {
                   paymentSheetInitialization(
-                  amount,
-                  'USD',
+                    amount,
+                    'USD',
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, // Use the same color as the Submit button
+                  backgroundColor:
+                      Colors.blue, // Use the same color as the Submit button
                   padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(30),
                   ),
                 ),
                 child: Text(
                   'Upgrade  for \$${displayAmount}.00',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
               ),
             ),

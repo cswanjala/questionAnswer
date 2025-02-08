@@ -13,12 +13,14 @@ class ExpertsProvider with ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
-  
-  Future<String?> get authToken => _apiService.getAuthToken(); // Expose the user token
+
+  Future<String?> get authToken =>
+      _apiService.getAuthToken(); // Expose the user token
 
   Map<String, dynamic> _currentUser = {}; // Store current user data
-  Map<String, dynamic> get currentUser => _currentUser; // Getter for current user data
-  
+  Map<String, dynamic> get currentUser =>
+      _currentUser; // Getter for current user data
+
   List<Map<String, dynamic>> _experts = [];
   List<Map<String, dynamic>> get experts => _experts;
 
@@ -34,10 +36,12 @@ class ExpertsProvider with ChangeNotifier {
         notifyListeners();
         // Fluttertoast.showToast(msg: "Current user data fetched successfully!");
       } else {
-        Fluttertoast.showToast(msg: "Failed to fetch current user: ${response.statusMessage}");
+        Fluttertoast.showToast(
+            msg: "Failed to fetch current user: ${response.statusMessage}");
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error fetching current user: ${e.toString()}");
+      Fluttertoast.showToast(
+          msg: "Error fetching current user: ${e.toString()}");
       log(e.toString());
     } finally {
       _isLoading = false;
@@ -57,7 +61,8 @@ class ExpertsProvider with ChangeNotifier {
         notifyListeners();
         // Fluttertoast.showToast(msg: "Experts fetched successfully!");
       } else {
-        Fluttertoast.showToast(msg: "Failed to fetch experts: ${response.statusMessage}");
+        Fluttertoast.showToast(
+            msg: "Failed to fetch experts: ${response.statusMessage}");
       }
     } catch (e) {
       Fluttertoast.showToast(msg: "Error fetching experts: ${e.toString()}");
@@ -97,7 +102,8 @@ class ExpertsProvider with ChangeNotifier {
   }
 
   // Update an existing expert
-  Future<bool> updateExpert(int expertId, String name, String expertise, String bio) async {
+  Future<bool> updateExpert(
+      int expertId, String name, String expertise, String bio) async {
     _isLoading = true;
     notifyListeners();
 
@@ -113,7 +119,8 @@ class ExpertsProvider with ChangeNotifier {
         await fetchExperts(); // Refresh the experts list
         return true;
       } else {
-        Fluttertoast.showToast(msg: "Failed to update expert: ${response.data}");
+        Fluttertoast.showToast(
+            msg: "Failed to update expert: ${response.data}");
         return false;
       }
     } catch (e) {
@@ -138,7 +145,8 @@ class ExpertsProvider with ChangeNotifier {
         await fetchExperts(); // Refresh the experts list
         return true;
       } else {
-        Fluttertoast.showToast(msg: "Failed to delete expert: ${response.statusMessage}");
+        Fluttertoast.showToast(
+            msg: "Failed to delete expert: ${response.statusMessage}");
         return false;
       }
     } catch (e) {
@@ -162,7 +170,8 @@ class ExpertsProvider with ChangeNotifier {
   // Method to add an expert to the user's favorite list
   Future<void> addFavoriteExpert(int expertId) async {
     final authToken = await _storage.read(key: 'auth_token');
-    final url = 'http://50.6.205.45:8000/api/addfavexpert'; // Replace with your API URL
+    final url =
+        'http://192.168.1.127:8000/api/addfavexpert'; // Replace with your API URL
 
     final response = await http.post(
       Uri.parse(url),

@@ -47,7 +47,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Initialize chat: Fetch user, load messages, and connect WebSocket
   Future<void> _initializeChat() async {
-
     log("The image URL is ${widget.expertImage}");
     await _getCurrentUsername();
     final token = await widget.authToken;
@@ -56,7 +55,8 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    final roomName = _generateRoomName(widget.senderUsername, widget.recipientUsername);
+    final roomName =
+        _generateRoomName(widget.senderUsername, widget.recipientUsername);
     await _loadPreviousMessages(roomName, token);
     _initializeWebSocket(roomName, token);
   }
@@ -74,24 +74,29 @@ class _ChatScreenState extends State<ChatScreen> {
   // Generate a unique room name
   String _generateRoomName(String user1, String user2) {
     final participants = [user1, user2]..sort();
-    final questionId = widget.questionId ?? 0; // Default to 0 if questionId is null
+    final questionId =
+        widget.questionId ?? 0; // Default to 0 if questionId is null
     return '${participants.join('_')}_$questionId';
   }
 
   // Load previous chat messages from the backend
   Future<void> _loadPreviousMessages(String roomName, String token) async {
-    final url = Uri.parse('http://50.6.205.45:8000/api/get_chat_messages/$roomName/');
+    final url =
+        Uri.parse('http://192.168.1.127:8000/api/get_chat_messages/$roomName/');
     try {
-      final response = await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final response =
+          await http.get(url, headers: {'Authorization': 'Bearer $token'});
 
       if (response.statusCode == 200) {
         final messages = json.decode(response.body) as List;
         setState(() {
-          _messages = messages.map((msg) => {
-            'message': msg['message'],
-            'sender_username': msg['sender'].trim(),
-            'recipient_username': msg['receiver'].trim(),
-          }).toList();
+          _messages = messages
+              .map((msg) => {
+                    'message': msg['message'],
+                    'sender_username': msg['sender'].trim(),
+                    'recipient_username': msg['receiver'].trim(),
+                  })
+              .toList();
         });
         _scrollToBottom();
       } else {
@@ -104,9 +109,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Initialize WebSocket connection
   void _initializeWebSocket(String roomName, String token) {
-    final questionId = widget.questionId ?? 0; // Default to 0 if questionId is null
+    final questionId =
+        widget.questionId ?? 0; // Default to 0 if questionId is null
     _channel = WebSocketChannel.connect(
-      Uri.parse('ws://50.6.205.45:8000/ws/chat/$roomName/$questionId/?token=$token'),
+      Uri.parse(
+          'ws://192.168.1.127:8000/ws/chat/$roomName/$questionId/?token=$token'),
     );
 
     _channel.stream.listen(
@@ -216,13 +223,17 @@ class _ChatScreenState extends State<ChatScreen> {
                   ElevatedButton(
                     onPressed: () async {
                       // Handle rating submission
-                      await RatingsService.submitRating(widget.recipientUsername, _rating, widget.questionId ?? 0);
+                      await RatingsService.submitRating(
+                          widget.recipientUsername,
+                          _rating,
+                          widget.questionId ?? 0);
                       Navigator.pop(context);
                       log('User rated: $_rating');
                     },
                     child: Text('Submit'),
                     style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -267,13 +278,18 @@ class _ChatScreenState extends State<ChatScreen> {
                 backgroundImage: AssetImage('assets/images/default_avatar.png'),
                 radius: 20,
               ),
-            if (widget.expertImage != null || widget.expertName != null) SizedBox(width: 10),
+            if (widget.expertImage != null || widget.expertName != null)
+              SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(widget.expertName,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
-                Text(widget.expertCategory, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black)),
+                Text(widget.expertCategory,
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ],
@@ -311,20 +327,29 @@ class _ChatScreenState extends State<ChatScreen> {
                             itemCount: _messages.length,
                             itemBuilder: (context, index) {
                               final message = _messages[index];
-                              final isUserMessage = message['sender_username'] == _currentUsername;
+                              final isUserMessage =
+                                  message['sender_username'] ==
+                                      _currentUsername;
 
                               return Align(
-                                alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
+                                alignment: isUserMessage
+                                    ? Alignment.centerRight
+                                    : Alignment.centerLeft,
                                 child: Container(
                                   padding: EdgeInsets.all(12),
                                   margin: EdgeInsets.symmetric(vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: isUserMessage ? Colors.blue : Colors.grey[200],
+                                    color: isUserMessage
+                                        ? Colors.blue
+                                        : Colors.grey[200],
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
                                     message['message'],
-                                    style: TextStyle(color: isUserMessage ? Colors.white : Colors.black),
+                                    style: TextStyle(
+                                        color: isUserMessage
+                                            ? Colors.white
+                                            : Colors.black),
                                   ),
                                 ),
                               );
@@ -336,7 +361,9 @@ class _ChatScreenState extends State<ChatScreen> {
               padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 10)],
+                boxShadow: [
+                  BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 10)
+                ],
               ),
               child: Row(
                 children: [
@@ -351,7 +378,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   IconButton(
                     icon: Icon(Icons.send, color: Colors.blue),
-                    onPressed: () => _sendMessage(_messageController.text.trim()),
+                    onPressed: () =>
+                        _sendMessage(_messageController.text.trim()),
                   ),
                 ],
               ),

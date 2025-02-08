@@ -75,7 +75,7 @@
 //         final authToken = await _storage.read(key: 'auth_token');
 //
 //         final response = await http.post(
-//           Uri.parse('http://50.6.205.45:8000/api/add_card/'), // Replace with your API URL
+//           Uri.parse('http://192.168.1.127:8000/api/add_card/'), // Replace with your API URL
 //           headers: {
 //             'Content-Type': 'application/json',
 //             'Authorization': 'Bearer $authToken', // Use the token from secure storage

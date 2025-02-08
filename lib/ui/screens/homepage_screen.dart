@@ -92,7 +92,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String baseUrl = 'http://50.6.205.45:8000';
+  final String baseUrl = 'http://192.168.1.127:8000';
   late bool isExpert;
 
   @override
@@ -205,13 +205,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? question['client']['username']
                   : assignedExpert?['user']['username'];
 
-                print("This is an expert or not "+isExpert.toString());
+              print("This is an expert or not " + isExpert.toString());
 
               return GestureDetector(
                 onTap: () async {
                   // Fetch the current logged-in user's username
                   final secureStorage = FlutterSecureStorage();
-                  final senderUsername = await secureStorage.read(key: 'username');
+                  final senderUsername =
+                      await secureStorage.read(key: 'username');
                   final image = isExpert
                       ? question['client']['profile_picture']
                       : assignedExpert != null
@@ -224,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       : assignedExpert?['user']['username'];
 
                   log(recipientUsername);
-                  log("Sender username is "+senderUsername!);
+                  log("Sender username is " + senderUsername!);
 
                   // Navigate to ChatScreen with the required parameters
                   if (recipientUsername != null && senderUsername != null) {
@@ -236,12 +237,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           recipientUsername: recipientUsername,
                           expertName: recipientUsername,
                           expertImage: image,
-                          expertCategory: assignedExpert?['categories'] != null &&
-                                  assignedExpert['categories'] is List &&
-                                  assignedExpert['categories'].isNotEmpty
-                              ? assignedExpert['categories'].join(', ')
-                              : "No category",
-                          authToken: Provider.of<ExpertsProvider>(context, listen: false).authToken,
+                          expertCategory:
+                              assignedExpert?['categories'] != null &&
+                                      assignedExpert['categories'] is List &&
+                                      assignedExpert['categories'].isNotEmpty
+                                  ? assignedExpert['categories'].join(', ')
+                                  : "No category",
+                          authToken: Provider.of<ExpertsProvider>(context,
+                                  listen: false)
+                              .authToken,
                           questionId: question['id'],
                         ),
                       ),
@@ -260,7 +264,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         CircleAvatar(
                           backgroundImage: profilePicture != null
                               ? NetworkImage(profilePicture)
-                              : const AssetImage('assets/images/default_avatar.png')
+                              : const AssetImage(
+                                      'assets/images/default_avatar.png')
                                   as ImageProvider,
                         ),
                         if (isActive)
@@ -289,7 +294,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           assignedExpert != null
                               ? "${assignedExpert['title']} | $formattedDate"
                               : "Waiting for an expert to be assigned | $formattedDate",
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                         const SizedBox(height: 5),
                         Text(
@@ -406,7 +412,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   authToken: authToken,
                                   senderUsername: 'salama',
                                   recipientUsername: 'makena',
-                                
                                 ),
                               ),
                             );

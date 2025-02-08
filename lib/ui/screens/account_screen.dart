@@ -39,7 +39,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://50.6.205.45:8000/api/membership-plans/?user=$userId'),
+        Uri.parse(
+            'http://192.168.1.127:8000/api/membership-plans/?user=$userId'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -92,8 +93,10 @@ class _AccountScreenState extends State<AccountScreen> {
               child: ElevatedButton(
                 onPressed: () => _logout(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, // Use the same color as the Submit button
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  backgroundColor:
+                      Colors.blue, // Use the same color as the Submit button
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
@@ -111,11 +114,13 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildProfileSection(UserProvider userProvider) {
-    String baseUrl = "http://50.6.205.45:8000"; // Replace with your actual API base URL
+    String baseUrl =
+        "http://192.168.1.127:8000"; // Replace with your actual API base URL
     String? profilePicturePath = userProvider.userData['profile_picture'];
-    String fullProfilePictureUrl = profilePicturePath != null && !profilePicturePath.startsWith('http')
-        ? '$baseUrl$profilePicturePath'
-        : profilePicturePath ?? '';
+    String fullProfilePictureUrl =
+        profilePicturePath != null && !profilePicturePath.startsWith('http')
+            ? '$baseUrl$profilePicturePath'
+            : profilePicturePath ?? '';
 
     return Row(
       children: [
@@ -144,12 +149,16 @@ class _AccountScreenState extends State<AccountScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              userProvider.isLoading ? 'Loading...' : userProvider.userData['username'] ?? 'Guest',
+              userProvider.isLoading
+                  ? 'Loading...'
+                  : userProvider.userData['username'] ?? 'Guest',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              userProvider.isLoading ? 'Loading...' : userProvider.userData['email'] ?? 'No email',
+              userProvider.isLoading
+                  ? 'Loading...'
+                  : userProvider.userData['email'] ?? 'No email',
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
@@ -187,7 +196,8 @@ class _AccountScreenState extends State<AccountScreen> {
         ListTile(
           leading: const Icon(Icons.settings, color: Colors.blue),
           title: const Text('Settings', style: TextStyle(fontSize: 16)),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          trailing:
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           onTap: () {
             // Navigate to settings screen (to be implemented)
           },
@@ -195,7 +205,8 @@ class _AccountScreenState extends State<AccountScreen> {
         ListTile(
           leading: const Icon(Icons.lock, color: Colors.blue),
           title: const Text('Change Password', style: TextStyle(fontSize: 16)),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          trailing:
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           // onTap: () {
           //   // Navigate to Change Password Screen
           //   Navigator.push(
@@ -206,8 +217,10 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
         ListTile(
           leading: const Icon(Icons.credit_card, color: Colors.blue),
-          title: const Text('Upgrade Membership', style: TextStyle(fontSize: 16)),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          title:
+              const Text('Upgrade Membership', style: TextStyle(fontSize: 16)),
+          trailing:
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           onTap: () {
             // Navigate to Add Credit Card Screen
             Navigator.push(
@@ -219,7 +232,8 @@ class _AccountScreenState extends State<AccountScreen> {
         ListTile(
           leading: const Icon(Icons.help, color: Colors.blue),
           title: const Text('Help & Support', style: TextStyle(fontSize: 16)),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          trailing:
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           onTap: () {
             // Navigate to help & support screen (to be implemented)
           },
