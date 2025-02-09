@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     AllMessagesView,
     AssignedQuestionsView,
+    ChangePasswordView,
     ChatMessageView,
     CreatePaymentIntentView,
     ExpertAverageRatingView,
@@ -69,6 +70,7 @@ urlpatterns = [
     path('expert_average_rating/<int:expert_id>/', ExpertAverageRatingView.as_view(), name='expert_average_rating'),
     path('infura/create-payment/', CreateInfuraPaymentView.as_view(), name='create-infura-payment'),
     path('complete-expert-registration/', CompleteExpertRegistrationView.as_view(), name='complete_expert_registration'),
+    path('api/change-password/', ChangePasswordView.as_view(), name='change_password'),
 ]
 
 

@@ -4,15 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
 import 'package:question_nswer/core/features/experts/controllers/experts_provider.dart';
+import 'package:question_nswer/ui/screens/ask_now_screen.dart';
 import 'package:question_nswer/ui/screens/chat_screen.dart';
 import 'package:question_nswer/services/ratings_service.dart';
+import 'package:question_nswer/ui/screens/homepage_screen.dart';
 
 class ExpertsListScreen extends StatelessWidget {
   const ExpertsListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final expertsProvider = Provider.of<ExpertsProvider>(context, listen: false);
+    final expertsProvider =
+        Provider.of<ExpertsProvider>(context, listen: false);
 
     // Fetch current user data when the screen is built
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -57,7 +60,8 @@ class ExpertsListScreen extends StatelessWidget {
                         final currentUser = provider.currentUser;
 
                         return FutureBuilder<double>(
-                          future: RatingsService.fetchAverageRating(expert['id']),
+                          future:
+                              RatingsService.fetchAverageRating(expert['id']),
                           builder: (context, snapshot) {
                             final averageRating = snapshot.data ?? 0.0;
                             return _buildExpertCard(
@@ -65,11 +69,13 @@ class ExpertsListScreen extends StatelessWidget {
                               expertName: expert['user']['username'],
                               id: expert['id'],
                               userId: expert['user']['id'],
-                              title: expert['title'] ?? ApiConstants.defaultTitle,
+                              title:
+                                  expert['title'] ?? ApiConstants.defaultTitle,
                               rating: averageRating,
                               categories: expert['categories'],
                               profilePicture: expert['user']['profile_picture'],
-                              senderUsername: currentUser['username'] ?? 'Unknown',
+                              senderUsername:
+                                  currentUser['username'] ?? 'Unknown',
                               recipientUsername: expert['user']['username'],
                             );
                           },
@@ -110,9 +116,11 @@ class ExpertsListScreen extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor: Colors.grey[300],
                   radius: 30,
-                  backgroundImage: profilePicture != null && profilePicture.isNotEmpty
-                    ? NetworkImage(profilePicture)
-                    : AssetImage('assets/images/default_avatar.png') as ImageProvider,
+                  backgroundImage:
+                      profilePicture != null && profilePicture.isNotEmpty
+                          ? NetworkImage(profilePicture)
+                          : AssetImage('assets/images/default_avatar.png')
+                              as ImageProvider,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -136,12 +144,16 @@ class ExpertsListScreen extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.favorite, color: Colors.red),
                   onPressed: () async {
-                    final user = await Provider.of<ExpertsProvider>(context, listen: false).currentUser;
+                    final user = await Provider.of<ExpertsProvider>(context,
+                            listen: false)
+                        .currentUser;
                     if (userId != null) {
                       try {
                         // Add the selected expert to favorites
-                        final response = await Provider.of<ExpertsProvider>(context, listen: false)
-                            .addFavoriteExpert(userId);
+                        final response = await Provider.of<ExpertsProvider>(
+                                context,
+                                listen: false)
+                            .addFavoriteExpert(id);
 
                         // Handle the response as needed (e.g., show success message)
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +161,9 @@ class ExpertsListScreen extends StatelessWidget {
                         );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to add expert to favorites: $e')),
+                          SnackBar(
+                              content:
+                                  Text('Expert is already in your favoutites')),
                         );
                       }
                     } else {
@@ -167,7 +181,7 @@ class ExpertsListScreen extends StatelessWidget {
                 _buildStarRating(rating),
                 const SizedBox(width: 8),
                 Text(
-                  "$rating/5",
+                  "$rating",
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],
@@ -183,19 +197,13 @@ class ExpertsListScreen extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: ElevatedButton(
                 onPressed: () {
-                  final authToken = Provider.of<ExpertsProvider>(context, listen: false).authToken;
-                  Navigator.push(
-                    context,
+                  // Navigate to AskNowScreen by updating the current index in HomepageScreen
+                  Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
-                      builder: (context) => ChatScreen(
-                        senderUsername: senderUsername,
-                        recipientUsername: recipientUsername,
-                        expertName: expertName,
-                        expertImage: profilePicture ?? "",
-                        expertCategory: title,
-                        authToken: authToken,
-                      ),
+                      builder: (context) => HomepageScreen(),
+                      settings: RouteSettings(arguments: 'ask_now'),
                     ),
+                    (route) => false,
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -224,7 +232,8 @@ class ExpertsListScreen extends StatelessWidget {
       children: [
         for (int i = 0; i < fullStars; i++)
           const Icon(Icons.star, color: Colors.amber, size: 16),
-        if (hasHalfStar) const Icon(Icons.star_half, color: Colors.amber, size: 16),
+        if (hasHalfStar)
+          const Icon(Icons.star_half, color: Colors.amber, size: 16),
         for (int i = 0; i < emptyStars; i++)
           const Icon(Icons.star_border, color: Colors.amber, size: 16),
       ],

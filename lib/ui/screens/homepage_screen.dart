@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'account_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:question_nswer/core/constants/api_constants.dart';
 
 class HomepageScreen extends StatefulWidget {
   const HomepageScreen({super.key});
@@ -33,6 +34,19 @@ class _HomepageScreenState extends State<HomepageScreen> {
     const ExpertsListScreen(),
     AccountScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if the screen was navigated to from the Experts screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ModalRoute.of(context)?.settings.arguments == 'ask_now') {
+        setState(() {
+          _currentIndex = 1;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +106,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String baseUrl = 'http://192.168.1.127:8000';
+  final String baseUrl = 'http://50.6.205.45:8000';
   late bool isExpert;
 
   @override
@@ -197,15 +211,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? DateFormat('MMM d, yyyy h:mm a').format(createdAt)
                   : "Unknown time";
               final isActive = question['is_active'] ?? false;
+              log(" huyu ndio assigned  " + assignedExpert.toString());
 
               final profilePicture = isExpert
-                  ? question['client']['profile_picture']
-                  : assignedExpert?['user']['profile_picture'];
+                  ? question['client']['profile_picture'] != null
+                      ? question['client']['profile_picture']
+                      : null
+                  : assignedExpert?['user']['profile_picture'] != null
+                      ? assignedExpert['user']['profile_picture']
+                      : null;
               final username = isExpert
                   ? question['client']['username']
                   : assignedExpert?['user']['username'];
 
-              print("This is an expert or not " + isExpert.toString());
+              log(profilePicture.toString() + " ndio form...");
 
               return GestureDetector(
                 onTap: () async {
@@ -223,9 +242,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   final recipientUsername = isExpert
                       ? question['client']['username']
                       : assignedExpert?['user']['username'];
-
-                  log(recipientUsername);
-                  log("Sender username is " + senderUsername!);
 
                   // Navigate to ChatScreen with the required parameters
                   if (recipientUsername != null && senderUsername != null) {
@@ -247,6 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   listen: false)
                               .authToken,
                           questionId: question['id'],
+                          isExpert: isExpert,
                         ),
                       ),
                     );
@@ -349,7 +366,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children:
                 favoriteExpertsProvider.favoriteExperts.take(2).map((expert) {
               final profilePicture =
-                  expert['expert']['user']['profile_picture'];
+                  expert['expert']['user']['profile_picture'] != null
+                      ? ApiConstants.baseImageUrl +
+                          expert['expert']['user']['profile_picture']
+                      : null;
               return Expanded(
                 child: Card(
                   elevation: 4,
@@ -390,30 +410,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 5),
                         ElevatedButton.icon(
-                          onPressed: () async {
-                            final authToken = Provider.of<ExpertsProvider>(
-                                    context,
-                                    listen: false)
-                                .authToken;
-                            Navigator.push(
-                              context,
+                          onPressed: () {
+                            // Navigate to AskNowScreen by updating the current index in HomepageScreen
+                            Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                builder: (context) => ChatScreen(
-                                  expertName: expert['expert']['user']
-                                      ['username'],
-                                  expertImage: profilePicture ?? "",
-                                  expertCategory: expert['expert']
-                                                  ['categories'] !=
-                                              null &&
-                                          expert['expert']['categories'] is List
-                                      ? expert['expert']['categories']
-                                          .join(', ')
-                                      : "No category",
-                                  authToken: authToken,
-                                  senderUsername: 'salama',
-                                  recipientUsername: 'makena',
-                                ),
+                                builder: (context) => HomepageScreen(),
+                                settings: RouteSettings(arguments: 'ask_now'),
                               ),
+                              (route) => false,
                             );
                           },
                           icon: const Icon(CupertinoIcons.chat_bubble_2_fill,

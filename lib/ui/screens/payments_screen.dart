@@ -120,7 +120,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.127:8000/api/membership-plans/'),
+        Uri.parse('http://50.6.205.45:8000/api/membership-plans/'),
         headers: {
           'Content-Type': 'application/json',
         },

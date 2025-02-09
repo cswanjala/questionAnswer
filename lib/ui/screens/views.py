@@ -64,9 +64,42 @@ class MembershipViewSet(viewsets.ModelViewSet):
 def index(request):
     return render(request, "chat/index.html")
 
+from rest_framework.request import Request  # Add this import
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def create(self, request):
+        print("inside create....")
+        serializer = self.get_serializer(data=request.data)
+        print(serializer)
+        if not serializer.is_valid():
+            print("Serializer errors:", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        print("after serializer....")
+        user = serializer.save()
+
+        print(serializer.validated_data.get('title'))
+        print("after validated data")
+
+        # Check if the user is an expert
+        if user.is_expert:
+            # Check if an Expert instance already exists for the user
+            if not hasattr(user, 'expert'):
+                # Create an Expert instance for the user
+                expert = Expert.objects.create(user=user, title=serializer.validated_data.get('title'))
+
+                # Add categories to the expert
+                categories = serializer.validated_data.get('categories', [])
+                for category_name in categories:
+                    category, created = Category.objects.get_or_create(name=category_name)
+                    expert.categories.add(category)
+            else:
+                print("Expert instance already exists for this user.")
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 class ExpertViewSet(viewsets.ModelViewSet):
     queryset = Expert.objects.all()
@@ -85,7 +118,7 @@ class ExpertAverageRatingView(APIView):
         questions_with_ratings = Question.objects.filter(assigned_expert=expert, ratings__isnull=False)
         
         # Compute the total and average rating
-        total_ratings = sum(rating.stars for question in questions_with_ratings for rating in question.ratings.all())
+        total_ratings = sum(min(rating.stars, 5) for question in questions_with_ratings for rating in question.ratings.all())
         total_questions = questions_with_ratings.count()
         average_rating = total_ratings / total_questions if total_questions > 0 else 0.0
 
@@ -95,8 +128,7 @@ class ExpertAverageRatingView(APIView):
             "average_rating": average_rating
         }
 
-        serializer = ExpertAverageRatingSerializer(response_data)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(response_data, status=status.HTTP_200_OK)
 
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticated]
@@ -149,6 +181,14 @@ class QuestionViewSet(viewsets.ModelViewSet):
         expert = assign_expert_to_question(question, client=self.request.user)
         if expert:
             notify_expert(expert, question)
+            
+            # Create initial chat message
+            ChatMessage.objects.create(
+                sender=self.request.user,
+                receiver=expert.user,
+                question=question,
+                message=question.content
+            )
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
@@ -252,8 +292,12 @@ class CompleteExpertRegistrationView(APIView):
             return Response({"error": "User is not an expert."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Validate and save additional expert fields
-        data = request.data
+        data = request.data  # Correctly access request data
+        print("The data from request is " + str(data))
         categories = data.get('categories', [])
+        if isinstance(categories, str):
+            categories = categories.split(',')
+        print(categories)
         title = data.get('title', "Expert")
 
         expert = user.expert
@@ -261,8 +305,8 @@ class CompleteExpertRegistrationView(APIView):
         expert.save()
 
         # Add categories to the expert
-        for category_id in categories:
-            category = Category.objects.get(id=category_id)
+        for category_name in categories:
+            category = Category.objects.get(name=category_name)
             expert.categories.add(category)
 
         return Response({"message": "Expert registration completed successfully."}, status=status.HTTP_200_OK)
@@ -375,20 +419,23 @@ class CurrentUserView(APIView):
 
 @api_view(['GET'])
 def get_chat_messages(request, room_name):
-    # Extract participants from room_name
-    participants = room_name.split('_')
-    if len(participants) != 2:
+    # Extract participants and question_id from room_name
+    parts = room_name.split('_')
+    if len(parts) != 3:
         return Response({"error": "Invalid room name format."}, status=400)
 
-    sender_username, receiver_username = participants
+    sender_username, receiver_username, question_id = parts
 
-    # Query for messages sent between the two users
+    # Query for messages related to the specific question
     messages = ChatMessage.objects.filter(
-        sender__username=sender_username, receiver__username=receiver_username
+        question_id=question_id,
+        sender__username=sender_username,
+        receiver__username=receiver_username
     ) | ChatMessage.objects.filter(
-        sender__username=receiver_username, receiver__username=sender_username
-    )
-    messages = messages.order_by('timestamp')
+        question_id=question_id,
+        sender__username=receiver_username,
+        receiver__username=sender_username
+    ).order_by('timestamp')
 
     serialized_messages = [
         {
@@ -396,8 +443,8 @@ def get_chat_messages(request, room_name):
             "sender": msg.sender.username,
             "receiver": msg.receiver.username,
             "timestamp": msg.timestamp,
-            "content":msg.question.content,
-            "question_id":msg.question.id
+            "content": msg.question.content,
+            "question_id": msg.question.id
         }
         for msg in messages
     ]
@@ -688,3 +735,26 @@ class CreateInfuraPaymentView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from django.contrib.auth import update_session_auth_hash
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        data = request.data
+
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+
+        if not user.check_password(current_password):
+            return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        # Update session to prevent logout after password change
+        update_session_auth_hash(request, user)
+
+        return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)

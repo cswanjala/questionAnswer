@@ -6,6 +6,7 @@ import 'package:question_nswer/core/features/users/user_provider.dart';
 import 'package:question_nswer/ui/screens/payments_screen.dart';
 import 'package:question_nswer/ui/screens/splash_screen.dart';
 import 'package:question_nswer/ui/screens/change_password_screen.dart';
+import 'package:question_nswer/ui/screens/help_support_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -39,8 +40,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse(
-            'http://192.168.1.127:8000/api/membership-plans/?user=$userId'),
+        Uri.parse('http://50.6.205.45:8000/api/membership-plans/?user=$userId'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -115,7 +115,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildProfileSection(UserProvider userProvider) {
     String baseUrl =
-        "http://192.168.1.127:8000"; // Replace with your actual API base URL
+        "http://50.6.205.45:8000"; // Replace with your actual API base URL
     String? profilePicturePath = userProvider.userData['profile_picture'];
     String fullProfilePictureUrl =
         profilePicturePath != null && !profilePicturePath.startsWith('http')
@@ -193,27 +193,27 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _buildAccountOptions(BuildContext context) {
     return Column(
       children: [
-        ListTile(
-          leading: const Icon(Icons.settings, color: Colors.blue),
-          title: const Text('Settings', style: TextStyle(fontSize: 16)),
-          trailing:
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          onTap: () {
-            // Navigate to settings screen (to be implemented)
-          },
-        ),
+        // ListTile(
+        //   leading: const Icon(Icons.settings, color: Colors.blue),
+        //   title: const Text('Settings', style: TextStyle(fontSize: 16)),
+        //   trailing:
+        //       const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        //   onTap: () {
+        //     // Navigate to settings screen (to be implemented)
+        //   },
+        // ),
         ListTile(
           leading: const Icon(Icons.lock, color: Colors.blue),
           title: const Text('Change Password', style: TextStyle(fontSize: 16)),
           trailing:
               const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          // onTap: () {
-          //   // Navigate to Change Password Screen
-          //   Navigator.push(
-          //     context,
-          //     MaterialPageRoute(builder: (context) => ChangePasswordScreen()),
-          //   );
-          // },
+          onTap: () {
+            // Navigate to Change Password Screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ChangePasswordScreen()),
+            );
+          },
         ),
         ListTile(
           leading: const Icon(Icons.credit_card, color: Colors.blue),
@@ -235,7 +235,11 @@ class _AccountScreenState extends State<AccountScreen> {
           trailing:
               const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           onTap: () {
-            // Navigate to help & support screen (to be implemented)
+            // Navigate to help & support screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HelpSupportScreen()),
+            );
           },
         ),
       ],

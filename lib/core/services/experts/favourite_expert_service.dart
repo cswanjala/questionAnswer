@@ -9,17 +9,19 @@ class FavoriteExpertsService {
   // Fetch favorite experts for a user
   Future<List<dynamic>> fetchFavoriteExperts(String userId) async {
     try {
-      final response = await _apiService.get(ApiConstants.favoriteExpertsEndpoint);
+      final response =
+          await _apiService.get(ApiConstants.favoriteExpertsEndpoint);
 
       if (response.statusCode == 200) {
         // Fluttertoast.showToast(msg: "Favorite experts fetched successfully");
+        log("Favourites Experts include  " + response.data.toString());
         return response.data;
       } else {
         // Fluttertoast.showToast(msg: "Failed to fetch favorite experts: ${response.data}");
         return [];
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error: ${e.toString()}");
+      // Fluttertoast.showToast(msg: "Error: ${e.toString()}");
       log(e.toString());
       return [];
     }
@@ -37,7 +39,8 @@ class FavoriteExpertsService {
         Fluttertoast.showToast(msg: "Favorite expert added successfully");
         return true;
       } else {
-        Fluttertoast.showToast(msg: "Failed to add favorite expert: ${response.data}");
+        Fluttertoast.showToast(
+            msg: "Failed to add favorite expert: ${response.data}");
         return false;
       }
     } catch (e) {
@@ -58,7 +61,8 @@ class FavoriteExpertsService {
         Fluttertoast.showToast(msg: "Favorite expert removed successfully");
         return true;
       } else {
-        Fluttertoast.showToast(msg: "Failed to remove favorite expert: ${response.data}");
+        Fluttertoast.showToast(
+            msg: "Failed to remove favorite expert: ${response.data}");
         return false;
       }
     } catch (e) {

@@ -1,7 +1,10 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:question_nswer/core/services/api_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   @override
@@ -38,13 +41,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       };
 
       try {
-        final response = await http.post(
-          Uri.parse('http://192.168.1.127:8000/api/change-password/'),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: json.encode(changePasswordData),
+        final apiService = ApiService();
+        final response = await apiService.post(
+          '/change-password/',
+          changePasswordData,
+          requiresAuth: true,
         );
+
+        log(response.data.toString());
 
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -54,7 +58,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('Failed to change password: ${response.body}')),
+                content: Text('Failed to change password: ${response.data}')),
           );
         }
       } catch (e) {

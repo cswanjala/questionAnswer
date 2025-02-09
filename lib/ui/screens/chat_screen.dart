@@ -14,6 +14,7 @@ class ChatScreen extends StatefulWidget {
   final String expertCategory;
   final Future<String?> authToken;
   final int? questionId;
+  final bool isExpert; // Add this field to determine if the user is an expert
 
   const ChatScreen({
     super.key,
@@ -24,6 +25,7 @@ class ChatScreen extends StatefulWidget {
     this.expertCategory = 'category',
     required this.authToken,
     this.questionId,
+    required this.isExpert, // Initialize this field
   });
 
   @override
@@ -82,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // Load previous chat messages from the backend
   Future<void> _loadPreviousMessages(String roomName, String token) async {
     final url =
-        Uri.parse('http://192.168.1.127:8000/api/get_chat_messages/$roomName/');
+        Uri.parse('http://50.6.205.45:8000/api/get_chat_messages/$roomName/');
     try {
       final response =
           await http.get(url, headers: {'Authorization': 'Bearer $token'});
@@ -113,7 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
         widget.questionId ?? 0; // Default to 0 if questionId is null
     _channel = WebSocketChannel.connect(
       Uri.parse(
-          'ws://192.168.1.127:8000/ws/chat/$roomName/$questionId/?token=$token'),
+          'ws://50.6.205.45:8000/ws/chat/$roomName/$questionId/?token=$token'),
     );
 
     _channel.stream.listen(
@@ -295,21 +297,23 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'End Chat') {
-                _endChatSession();
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return {'End Chat'}.map((String choice) {
-                return PopupMenuItem<String>(
-                  value: choice,
-                  child: Text(choice),
-                );
-              }).toList();
-            },
-          ),
+          if (!widget
+              .isExpert) // Only show the option to end chat if the user is not an expert
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'End Chat') {
+                  _endChatSession();
+                }
+              },
+              itemBuilder: (BuildContext context) {
+                return {'End Chat'}.map((String choice) {
+                  return PopupMenuItem<String>(
+                    value: choice,
+                    child: Text(choice),
+                  );
+                }).toList();
+              },
+            ),
         ],
       ),
       body: Column(

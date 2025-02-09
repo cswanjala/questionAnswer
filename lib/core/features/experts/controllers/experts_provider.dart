@@ -171,7 +171,7 @@ class ExpertsProvider with ChangeNotifier {
   Future<void> addFavoriteExpert(int expertId) async {
     final authToken = await _storage.read(key: 'auth_token');
     final url =
-        'http://192.168.1.127:8000/api/addfavexpert'; // Replace with your API URL
+        'http://50.6.205.45:8000/api/addfavexpert/'; // Replace with your API URL
 
     final response = await http.post(
       Uri.parse(url),

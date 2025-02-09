@@ -43,8 +43,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse(
-            'http://192.168.1.127:8000/api/membership-plans/?user=$userId'),
+        Uri.parse('http://50.6.205.45:8000/api/membership-plans/?user=$userId'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -225,7 +224,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
       }
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.127:8000/api/infura/create-payment/'),
+        Uri.parse('http://50.6.205.45:8000/api/infura/create-payment/'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -273,7 +272,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
       log("amount is $paymentMethod.amount");
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.127:8000/api/store-payment-details/'),
+        Uri.parse('http://50.6.205.45:8000/api/store-payment-details/'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -293,7 +292,7 @@ class _AskNowScreenState extends State<AskNowScreen> {
   Future<String> _fetchClientSecret() async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.127:8000/api/payments/create-intent/'),
+        Uri.parse('http://50.6.205.45:8000/api/payments/create-intent/'),
         headers: {
           'Content-Type': 'application/json',
         },

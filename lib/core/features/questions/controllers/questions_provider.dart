@@ -19,7 +19,6 @@ class QuestionsProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
 
-
   Future<void> fetchQuestions() async {
     _isLoading = true;
     notifyListeners();
@@ -30,8 +29,11 @@ class QuestionsProvider with ChangeNotifier {
         _questions = response.data;
         _page = 1;
         _hasMore = response.data.isNotEmpty;
+
+        log(_questions.toString());
       } else {
-        Fluttertoast.showToast(msg: "Failed to fetch questions: ${response.statusMessage}");
+        Fluttertoast.showToast(
+            msg: "Failed to fetch questions: ${response.statusMessage}");
       }
     } catch (e) {
       Fluttertoast.showToast(msg: "Error fetching questions: ${e.toString()}");
@@ -58,10 +60,12 @@ class QuestionsProvider with ChangeNotifier {
           _hasMore = false;
         }
       } else {
-        Fluttertoast.showToast(msg: "Failed to fetch more questions: ${response.statusMessage}");
+        Fluttertoast.showToast(
+            msg: "Failed to fetch more questions: ${response.statusMessage}");
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error fetching more questions: ${e.toString()}");
+      Fluttertoast.showToast(
+          msg: "Error fetching more questions: ${e.toString()}");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -79,10 +83,12 @@ class QuestionsProvider with ChangeNotifier {
         _page = 1;
         _hasMore = response.data.isNotEmpty;
       } else {
-        Fluttertoast.showToast(msg: "Failed to refresh questions: ${response.statusMessage}");
+        Fluttertoast.showToast(
+            msg: "Failed to refresh questions: ${response.statusMessage}");
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error refreshing questions: ${e.toString()}");
+      Fluttertoast.showToast(
+          msg: "Error refreshing questions: ${e.toString()}");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -117,7 +123,6 @@ class QuestionsProvider with ChangeNotifier {
         return false;
       }
     } catch (e) {
-      
       return true;
     } finally {
       _isLoading = false;
@@ -125,7 +130,8 @@ class QuestionsProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> updateQuestion(int questionId, String content, int categoryId) async {
+  Future<bool> updateQuestion(
+      int questionId, String content, int categoryId) async {
     _isLoading = true;
     notifyListeners();
 
@@ -140,7 +146,8 @@ class QuestionsProvider with ChangeNotifier {
         await fetchQuestions(); // Refresh the questions list
         return true;
       } else {
-        Fluttertoast.showToast(msg: "Failed to update question: ${response.data}");
+        Fluttertoast.showToast(
+            msg: "Failed to update question: ${response.data}");
         return false;
       }
     } catch (e) {
@@ -164,7 +171,8 @@ class QuestionsProvider with ChangeNotifier {
         await fetchQuestions(); // Refresh the questions list
         return true;
       } else {
-        Fluttertoast.showToast(msg: "Failed to delete question: ${response.statusMessage}");
+        Fluttertoast.showToast(
+            msg: "Failed to delete question: ${response.statusMessage}");
         return false;
       }
     } catch (e) {
@@ -189,6 +197,3 @@ class QuestionsProvider with ChangeNotifier {
     }
   }
 }
-
-
-
