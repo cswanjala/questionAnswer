@@ -1,12 +1,15 @@
 import 'dart:developer';
+import 'dart:io';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:dio/dio.dart';
 import 'package:question_nswer/core/constants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 
 class AuthService {
   final ApiService _apiService = ApiService();
 
-  Future<bool> register(String username, String email, String password, String confirmPassword) async {
+  Future<bool> register(String username, String email, String password, String confirmPassword, File? profileImage, bool isExpert, String title, List<String> categories) async {
     if (username.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       Fluttertoast.showToast(msg: "All fields must be filled");
       return false;
@@ -18,9 +21,19 @@ class AuthService {
     }
 
     try {
+      final formData = FormData.fromMap({
+        'username': username,
+        'email': email,
+        'password': password,
+        if (profileImage != null && await profileImage.exists()) 'profile_picture': await MultipartFile.fromFile(profileImage.path),
+        'is_expert': isExpert,
+        if (isExpert) 'title': title,
+        if (isExpert) 'categories': categories.join(','),
+      });
+
       final response = await _apiService.post(
         ApiConstants.registerEndpoint,
-        {'username': username, 'email': email, 'password': password},
+        formData,
         requiresAuth: false,
       );
 
@@ -64,13 +77,17 @@ class AuthService {
           log("Access Token: ${data['access']}");
           log("User ID: ${data['id']}");
           log("Username: ${data['username']}");
+          log("Is Expert: ${data['is_expert']}");
         } else {
           log("Unexpected data format: ${data.runtimeType}");
         }
 
-        // Save token, user_id, and username securely
+        // Save token, user_id, username, and is_expert securely
         await _apiService.saveToken(data['access'], data['id'].toString(), data['username']);
         
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_expert', data['is_expert']);
+
         return true;
       } else {
         Fluttertoast.showToast(msg: "Login failed: ${response.data}");

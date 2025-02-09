@@ -26,7 +26,7 @@ class QuestionsService {
   }
 
   // Add a new question
-  Future<bool> addQuestion(String content, int categoryId, bool isExpert) async {
+  Future<bool> addQuestion(String content, bool isExpert) async {
     if (content.isEmpty) {
       // Fluttertoast.showToast(msg: "Title and description must be filled");
       return false;
@@ -35,7 +35,7 @@ class QuestionsService {
     try {
       final response = await _apiService.post(
         ApiConstants.questionsEndpoint,
-        {'content': content, 'category': categoryId, 'is_expert': isExpert},
+        {'content': content, 'is_expert': isExpert},
       );
 
       if (response.statusCode == 201) {

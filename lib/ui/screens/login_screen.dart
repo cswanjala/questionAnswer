@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   text: const TextSpan(
                     children: [
                       TextSpan(
-                        text: 'just',
+                        text: 'expert',
                         style: TextStyle(
                           color: Colors.blue,
                           fontWeight: FontWeight.bold,
@@ -90,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       TextSpan(
-                        text: 'Answer',
+                        text: 'ask&more',
                         style: TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.bold,

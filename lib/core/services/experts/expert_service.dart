@@ -12,14 +12,14 @@ class ExpertsService {
       final response = await _apiService.get(ApiConstants.expertsEndpoint);
 
       if (response.statusCode == 200) {
-        Fluttertoast.showToast(msg: "Experts fetched successfully");
+        // Fluttertoast.showToast(msg: "Experts fetched successfully");
         return response.data;
       } else {
-        Fluttertoast.showToast(msg: "Failed to fetch experts: ${response.data}");
+        // Fluttertoast.showToast(msg: "Failed to fetch experts: ${response.data}");
         return [];
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error: ${e.toString()}");
+      // Fluttertoast.showToast(msg: "Error: ${e.toString()}");
       log(e.toString());
       return [];
     }
