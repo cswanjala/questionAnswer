@@ -1,4 +1,4 @@
-package com.expertask.answer
+package com.questionexpertask.getanswer
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterFragmentActivity
