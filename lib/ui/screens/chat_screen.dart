@@ -84,8 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // Load previous chat messages from the backend
   Future<void> _loadPreviousMessages(String roomName, String token) async {
     final url =
-
-        Uri.parse('http://50.6.205.45:8000/api/get_chat_messages/$roomName/');
+        Uri.parse('http://192.168.1.127:8000/api/get_chat_messages/$roomName/');
 
     try {
       final response =
@@ -116,10 +115,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final questionId =
         widget.questionId ?? 0; // Default to 0 if questionId is null
     _channel = WebSocketChannel.connect(
-
       Uri.parse(
-          'ws://50.6.205.45:8000/ws/chat/$roomName/$questionId/?token=$token'),
-
+          'ws://192.168.1.127:8000/ws/chat/$roomName/$questionId/?token=$token'),
     );
 
     _channel.stream.listen(

@@ -40,7 +40,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://50.6.205.45:8000/api/membership-plans/?user=$userId'),
+        Uri.parse(
+            'http://192.168.1.127:8000/api/membership-plans/?user=$userId'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -115,7 +116,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _buildProfileSection(UserProvider userProvider) {
     String baseUrl =
-        "http://50.6.205.45:8000"; // Replace with your actual API base URL
+        "http://192.168.1.127:8000"; // Replace with your actual API base URL
     String? profilePicturePath = userProvider.userData['profile_picture'];
     String fullProfilePictureUrl =
         profilePicturePath != null && !profilePicturePath.startsWith('http')
